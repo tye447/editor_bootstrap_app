@@ -4,11 +4,13 @@
   "dependencies": {
     "@rails/webpacker": "5.1.1",
     "jquery": "^3.4.1",
+    "query-ast": "^1.0.3",
     "react": "16",
     "react-dom": "16",
     "react-router": "^5.0.0",
     "react-router-dom": "^5.0.0",
-    "react_ujs": "^2.5.0"
+    "react_ujs": "^2.5.0",
+    "scss-parser": "^1.0.4"
   },
   "devDependencies": {
     "webpack-dev-server": "^3.11.0"
