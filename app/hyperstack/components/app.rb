@@ -1,6 +1,5 @@
 class App < HyperComponent
   include Hyperstack::Router
-
   render(DIV) do
     DIV do
       top
@@ -13,11 +12,13 @@ class App < HyperComponent
   after_mount do
     HTTP.get("/flat_bootstrap.scss") do |response|
       @bootstrap =  response.body
+      Sass.compile(@bootstrap) do |result|
+        mutate @css = result['text']
+      end
     end
   end
 
   def top
-    @custom = ""
     DIV do
       DIV(style:{'display':'flex'}) do
         DIV(class:'variable') do
@@ -27,12 +28,14 @@ class App < HyperComponent
             @file = evt.target.files[0].text()
             @file.then{|result| 
               mutate @variable = result
-              @ast = parser(@variable)
-              @combinaison = @variable +"\n" + @bootstrap + "\n"+@custom
-              Sass.compile(@combinaison) do |result|
-                mutate @css = result['text']
-              end
+              @ast = Sass.parse(@variable)
               @array = @ast.find_declaration_variables
+              @string_var = @variable.to_s
+              @combinaison = @string_var +"\n" + @bootstrap + "\n"+@custom+"\n"
+              Sass.compile(@combinaison) do |result|
+                  mutate @css = result['text']
+              end
+              alert "file variable charged!"
             } 
           end
         end
@@ -44,37 +47,39 @@ class App < HyperComponent
             @file = evt.target.files[0].text()
             @file.then{|result| 
               mutate @custom = result
-              @ast = parser(@variable)
-              @combinaison = @variable +"\n" + @bootstrap + "\n"+@custom
+              @ast = Sass.parse(@variable)
+              @array = @ast.find_declaration_variables
+              @string_var = @variable.to_s
+              @combinaison = @string_var +"\n" + @bootstrap + "\n"+@custom
               Sass.compile(@combinaison) do |result|
                 mutate @css = result['text']
               end
-              @array = @ast.find_declaration_variables
+              alert "file custom charged!"
             } 
           end
         end
-      end
-
-      DIV(style: {'overflowY':'scroll','height':'200px','borderWidth':'4px'}) do
-        H5{'SCSS:'}
-        P{"#{@variable}"}
-      end
-
-      DIV(style: {'overflowY':'scroll','height':'200px','borderWidth':'4px'}) do
-        H5{'CSS:'}
-        P{"#{@css}"}
+        DIV do
+          BUTTON(class:'btn btn-primary'){"Reset"}.on(:click) do
+            @variable=""
+            @custom=""
+            Sass.compile(@bootstrap) do |result|
+              mutate @css = result['text']
+            end
+            alert "Style reseted!"
+          end
+        end
       end
     end
   end
-
+  
   def preview
-    DIV(class:'preview',style: {'overflowY':'scroll','height':'300px'}) do
+    DIV(class:'preview',style: {'overflowY':'scroll','height':'700px'}) do
       Preview(css: @css)
     end
   end
 
   def param
-    DIV(class:'param',style: {'overflowY':'scroll','height':'300px'}) do
+    DIV(class:'param',style: {'overflowY':'scroll','height':'700px'}) do
       unless @array.nil?
         FORM do
           @array.each do |v|
@@ -84,13 +89,15 @@ class App < HyperComponent
                 INPUT(type: v['type'], class:'form-control', value:v['value'])
                 .on(:change) do |evt|
                   mutate v['value'] = evt.target.value
-                  @ast = parser(@variable)
+                  @ast = Sass.parse(@variable)
                   @ast.replace(v['name'],v['type'],v['value'])
                   mutate @variable = @ast.stringify
-                  @combinaison = @variable +"\n" + @bootstrap
+                  @string_var = @variable.to_s
+                  @combinaison = @string_var +"\n" + @bootstrap + "\n"+@custom
                   Sass.compile(@combinaison) do |result|
                     mutate @css = result['text']
                   end
+                  alert "replace ok"
                 end
                 SPAN(class: 'form-control'){v['unit']}
               end
@@ -101,9 +108,4 @@ class App < HyperComponent
     end
   end
 
-  def parser(text)
-    Sass.parse(text)
-  end
-
-  
 end

@@ -45,6 +45,7 @@ class Sass
       return @json
     end
 
+    
     def find_declaration_variables
       @json = []
       `
@@ -52,49 +53,37 @@ class Sass
       declarations =  $().children('declaration');
       length = declarations.length();
       for(i = 0;i<length;i++){
+        variable_unit = '';
         declaration = declarations.eq(i);
-        property = declaration.children('property');
-        property_value = '$'+property.value();
-        value = declaration.children('value').children();
-        value_type = value.map((n)=>n.node.type);
-        value_value = value.value();
-        target_value_unit = '';
-        if(value_type.includes('color_hex')){
-          target = value.find('color_hex');
-          target_value = '#'+target.value();
-          target_type = 'color';
+        variable_name = stringify(declaration.children('property').get(0));
+        declaration.children('value').children().first().remove();
+        variable_value = stringify(declaration.children('value').get(0)).replace(' !default','');
+        
+        types = declaration.children('value').children().map((n)=>n.node.type);
+        
+        if(types.includes('color_hex')){
+          variable_type = "color"
         }
-        else if(value_type.includes('number')){
-          target = value.find('number');
-          if(target.next().map((n)=>n.node.type).includes('identifier')){
-            target_value = target.value();
-            target_type = 'number';
-            target_value_unit = target.next().value();
+        else if(types.includes('number')){
+          variable_type = "number";
+          var regexStr = variable_value.match(/[a-z]+|[^a-z]+/gi);
+          variable_value = regexStr[0];
+          if(regexStr.length!==1){
+            variable_unit = regexStr[1];
           }
-          else{
-            target_value = target.value();
-            target_type = 'number';
-          }
-        }
-        else if(value_type.includes('variable')){
-          target = value.find('variable');
-          target_value = '$'+target.value();
-          target_type = 'variable';
         }
         else{
-          target = value.first().nextAll();
-          target_value = target.value();
-          target_value = target_value.replace(' !default','');
-          target_type = 'string';
+          variable_type = 'string';
+          variable_unit = '';
         }
 
 
         #{@json.push({
           "id"=>`i`,
-          "name"=>`property_value`,
-          "type"=>`target_type`,
-          "value"=>`target_value`,
-          "unit"=>`target_value_unit`
+          "name"=>`variable_name`,
+          "type"=>`variable_type`,
+          "value"=>`variable_value`,
+          "unit"=>`variable_unit`
         })}`
 
       `}
