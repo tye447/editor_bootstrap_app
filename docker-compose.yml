@@ -1,0 +1,54 @@
+version: '3.3'
+volumes:
+  postgres-data:
+  postgres-run:
+services:
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_USER=docker_postgres
+      - POSTGRES_PASSWORD=
+      - POSTGRES_DB=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust # only for development
+    volumes:
+      - type: 'volume'
+        source: postgres-run
+        target: /var/run/postgresql/
+      - type: 'volume'
+        source: postgres-data
+        target: /var/lib/postgresql/data
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec foreman start"
+    user: "${USER_UID}:${USER_GID}"
+    tty: true
+    environment:
+      - TERM=xterm-256color
+      - HOME=/app # important for bundler because it tries to check if / is writable
+      - BUNDLE_PATH=/app/.bundle
+      - BUNDLE_BIN=/app/.bundle/bin
+      - GEM_HOME=/app/.bundle
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+      - type: 'volume'
+        source: postgres-run
+        target: /var/run/postgresql/
+    ports:
+      - 5000:5000
+      - 25222:25222
+    extra_hosts:
+      - "git.uneek.eu:10.10.42.24"
+    labels:
+      - traefik.enable=true
+      - "traefik.frontend.rule=Host:bootstrap_editor.localhost"
+  proxy:
+    image: traefik:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.toml:/etc/traefik/traefik.toml

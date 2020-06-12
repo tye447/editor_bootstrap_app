@@ -1,39 +1,31 @@
 class Editor < HyperComponent
   include Hyperstack::Router::Helpers
-  render(DIV) do
-    DIV do
-      top
-    end
-    DIV(style:{'display':'flex'}) do
-      preview      
-      param
+  render() do
+    DIV(class: 'container-fluid') do
+      DIV do
+        top
+      end
+      DIV(class: 'row') do
+        preview
+        param
+      end
+      loader
     end
   end
 
   after_mount do
     HTTP.get("/flat_bootstrap.scss") do |response|
       @bootstrap =  response.body
-      Sass.compile(@bootstrap) do |result|
-        mutate @cssString = result['text']
+
+      HTTP.get("/default_variable.scss") do |response2|
+        @variable =  response2.body
+        update_variables
+        compile_css
+        update_preview
+        mutate
       end
     end
-    HTTP.get("/default_variable.scss") do |response|
-      @variable =  response.body
-      @ast = Sass.parse(@variable)
-      @array = @ast.find_declaration_variables
-    end
-  end
 
-  after_update do
-    update_preview
-    puts "test"
-  end
-
-  def update_preview
-    `
-    var frame = document.querySelector('iframe');
-    frame.contentWindow.postMessage('test','*');
-    `
   end
 
   def top
@@ -45,14 +37,11 @@ class Editor < HyperComponent
           INPUT(type: :file).on(:change) do |evt|
             @file = evt.target.files[0].text()
             @file.then{|result| 
-              mutate @variable = result
-              @ast = Sass.parse(@variable)
-              @array = @ast.find_declaration_variables
-              @combinaison = @variable.to_s+"\n"+@bootstrap.to_s+"\n"+@custom.to_s+"\n"
-              Sass.compile(@combinaison) do |result|
-                  mutate @cssString = result['text']
-              end
-              alert "file variable charged!"
+              @variable = result
+              update_variables
+              compile_css
+              puts "file variable charged!"
+              mutate
             } 
           end
         end
@@ -63,14 +52,10 @@ class Editor < HyperComponent
           INPUT(type: :file).on(:change) do |evt|
             @file = evt.target.files[0].text()
             @file.then{|result| 
-              mutate @custom = result
-              @ast = Sass.parse(@variable)
-              @array = @ast.find_declaration_variables
-              @combinaison = @variable.to_s+"\n"+@bootstrap.to_s+"\n"+@custom.to_s+"\n"
-              Sass.compile(@combinaison) do |result|
-                mutate @cssString = result['text']
-              end
-              alert "file custom charged!"
+              @custom = result
+              compile_css
+              puts "file custom charged!"
+              mutate
             } 
           end
         end
@@ -78,10 +63,11 @@ class Editor < HyperComponent
           BUTTON(class:'btn btn-primary'){"Reset"}.on(:click) do
             @variable=""
             @custom=""
-            Sass.compile(@bootstrap) do |result|
-              mutate @cssString = result['text']
-            end
-            alert "Style reseted!"
+            update_variables
+            compile_css
+            update_preview
+            puts "Style reseted!"
+            mutate
           end
         end
       end
@@ -89,11 +75,18 @@ class Editor < HyperComponent
   end
   
   def preview
-    IFRAME(id:'myIframe', src:"/preview")
+    IFRAME(src:"/preview", style: {border: 'none'}, class: 'col-9')
+  end
+
+  def loader
+    DIV(id: 'loader', class: 'spinner-border position-absolute', style: {display: 'none', top: '50%', left: '50%', width: '6em', height: '6em'}) do
+      SPAN(class: 'sr-only') do
+      end
+    end
   end
 
   def param
-    DIV(class:'param',style: {'overflowY':'scroll','height':'700px'}) do
+    DIV(class:'param col-3',style: {'overflowY':'scroll','height':'700px'}) do
       unless @array.nil?
         FORM do
           @array.each do |v|
@@ -102,16 +95,18 @@ class Editor < HyperComponent
               DIV(style: {'display':'flex'}) do
                 INPUT(type: v['type'], class:'form-control', value:v['value'])
                 .on(:change) do |evt|
-                  mutate v['value'] = evt.target.value
-                  @ast = Sass.parse(@variable)
-                  @ast.replace(v['name'],v['type'],v['value'])
-                  mutate @variable = @ast.stringify
-                  @combinaison = @variable.to_s+"\n"+@bootstrap.to_s+"\n"+@custom.to_s+"\n"
-                  Sass.compile(@combinaison) do |result|
-                    mutate @cssString = result['text']
+
+                  @timer&.abort
+                  @timer = after(0.3) do
+                    @ast = Sass.parse(@variable)
+                    @ast.replace(v['name'],v['type'],v['value'])
+                    @variable = @ast.stringify
+                    compile_css
+                    @timer = nil
                   end
-                  alert "replace ok"
-                  
+
+                  mutate v['value'] = evt.target.value
+                  puts "replace ok"
                 end
                 SPAN(class: 'form-control'){v['unit']}
               end
@@ -122,5 +117,28 @@ class Editor < HyperComponent
     end
   end
 
+  def update_variables
+    @ast = Sass.parse(@variable)
+    @array = @ast.find_declaration_variables
+  end
+
+  def update_preview
+    return unless @css_string.present?
+    `
+      var frame = top.document.querySelector('iframe');
+      frame.contentWindow.postMessage(#{@css_string},'/');
+    `
+  end
+
+  def compile_css
+    ::Element.find('#loader').show()
+    @combinaison = @variable.to_s+"\n"+@bootstrap.to_s+"\n"+@custom.to_s+"\n"
+    Sass.compile(@combinaison) do |result|
+      @css_string = result['text']
+      update_preview
+      ::Element.find('#loader').hide()
+      mutate
+    end
+  end
 
 end
