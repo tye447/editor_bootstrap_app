@@ -1,18 +1,32 @@
 class Preview < HyperComponent
-
-  param :css
-
-
+  include Hyperstack::Router::Helpers
+  param :css , default: ''
   render(DIV) do
-    STYLE{css}
-    buttons
-    cards
-    forms
-    list
-    navs
-    tables
+    # STYLE{css}
+    # buttons
+    # cards
+    # forms
+    # list
+    # navs
+    # tables
   end
 
+  after_mount do
+    puts "after_mount"
+    listen_css
+  end
+
+  def listen_css
+
+    `
+    window.addEventListener("message",function(e){
+        console.log(e.data);
+    })
+
+    
+    `
+  end
+  
   def buttons
     DIV(class:'button') do
       H2{'Buttons'}
