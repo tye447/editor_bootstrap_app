@@ -119,23 +119,35 @@ class Editor < HyperComponent
           @array.each do |v|
             DIV(class:'form-group') do
               LABEL{v['name']}
-              DIV(style: {'display':'flex'}) do
+              DIV(style: {'display':'flex','border':'none'}) do
                 INPUT(type: v['type'], class:'form-control', value:v['value'])
                 .on(:change) do |evt|
-
+                  mutate v['value'] = evt.target.value
                   @timer&.abort
-                  @timer = after(0.3) do
+                  @timer = after(1) do
                     @ast = Sass.parse(@variable)
-                    @ast.replace(v['name'],v['type'],v['value'])
+                    @ast.replace(v['name'],v['type'],v['type'],v['value'])
                     @variable = @ast.stringify
                     compile_css
                     @timer = nil
                   end
-
-                  mutate v['value'] = evt.target.value
-                  puts "replace ok"
+                  
                 end
-                SPAN(class: 'form-control'){v['unit']}
+                SPAN(class: 'form-control',style: {'border':'none'}){v['unit']}
+                SELECT(class:'form-control',id: 'select',value: v['type']){
+                  OPTION{'variable'}
+                  OPTION{'color'}
+                  OPTION{'number'}
+                  OPTION{'string'}
+                }.on(:change) do |evt|
+                  old_type = v['type']
+                  new_type = evt.target.value
+                  @ast = Sass.parse(@variable)
+                  @ast.replace(v['name'],old_type,new_type,v['value'])
+                  v['type'] = new_type
+                  @variable = @ast.stringify
+                  compile_css
+                end
               end
             end
           end
