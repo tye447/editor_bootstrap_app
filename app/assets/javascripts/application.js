@@ -20,3 +20,4 @@
 //= require bootstrap-sprockets
 //= require sass
 //= require sass.worker
+//= require download

@@ -1,8 +1,8 @@
 class Editor < HyperComponent
   include Hyperstack::Router::Helpers
-  render() do
+  render do
     DIV(class: 'container-fluid') do
-      DIV do
+      DIV(style:{'height':"calc(25vh)"}) do
         top
       end
       DIV(class: 'row') do
@@ -25,52 +25,79 @@ class Editor < HyperComponent
         mutate
       end
     end
-
   end
 
-  def top
-    DIV do
-      DIV(style:{'display':'flex'}) do
-        DIV(class:'variable') do
-          LABEL{'variable:'}
-          BR{}
-          INPUT(type: :file).on(:change) do |evt|
+  def input_variable
+    DIV(class:'variable') do
+      DIV(class:'input-group mb-3') do
+        DIV(class:'input-group-prepend') do
+          SPAN(class: 'input-group-text', id:"fileVariable"){"Variable"}
+        end
+        DIV(class:'custom-file') do
+          INPUT(type: :file, class: 'custom-file-input', id:"fileVariable").on(:change) do |evt|
             @file = evt.target.files[0].text()
             @file.then{|result| 
               @variable = result
               update_variables
               compile_css
-              puts "file variable charged!"
               mutate
             } 
           end
+          LABEL(class:"custom-file-label", htmlFor:'fileVariable'){"Choose file"}
         end
+      end
+    end
+  end
 
-        DIV(class:'custom') do
-          LABEL{'custom:'}
-          BR{}
-          INPUT(type: :file).on(:change) do |evt|
+  def input_custom
+    DIV(class:'custom') do
+      DIV(class:'input-group mb-3') do
+        DIV(class:'input-group-prepend') do
+          SPAN(class: 'input-group-text', id:"fileCustom"){"Custom"}
+        end
+        DIV(class:'custom-file') do
+          INPUT(type: :file,class: 'custom-file-input', id:"fileCustom").on(:change) do |evt|
             @file = evt.target.files[0].text()
             @file.then{|result| 
               @custom = result
               compile_css
-              puts "file custom charged!"
               mutate
             } 
           end
-        end
-        DIV do
-          BUTTON(class:'btn btn-primary'){"Reset"}.on(:click) do
-            @variable=""
-            @custom=""
-            update_variables
-            compile_css
-            update_preview
-            puts "Style reseted!"
-            mutate
-          end
+          LABEL(class:"custom-file-label", htmlFor:'fileCustom'){"Choose file"}
         end
       end
+    end
+  end
+
+  def download
+    DIV do
+      BUTTON(class:"btn btn-outline-primary"){"Download"}.on(:click) do
+        `download(#{@css_string}, "bootstrap.css", "text/plain");`
+      end
+    end
+  end
+
+  def reset
+    DIV do
+      BUTTON(class:'btn btn-primary'){"Reset"}.on(:click) do
+        @variable=""
+        @custom=""
+        update_variables
+        compile_css
+        update_preview
+        mutate
+      end
+    end
+  end
+
+
+  def top
+    DIV do
+      input_variable
+      input_custom
+      reset
+      download
     end
   end
   

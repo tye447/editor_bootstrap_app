@@ -10,7 +10,8 @@
     "react-router": "^5.0.0",
     "react-router-dom": "^5.0.0",
     "react_ujs": "^2.5.0",
-    "scss-parser": "^1.0.4"
+    "scss-parser": "^1.0.4",
+    "webpack": "^4.43.0"
   },
   "devDependencies": {
     "webpack-dev-server": "^3.11.0"
