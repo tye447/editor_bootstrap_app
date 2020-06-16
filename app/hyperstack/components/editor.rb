@@ -2,10 +2,10 @@ class Editor < HyperComponent
   include Hyperstack::Router::Helpers
   render do
     DIV(class: 'container-fluid') do
-      DIV(style:{'height':"calc(25vh)"}) do
+      DIV(style:{'height':"calc(10vh)"}) do
         top
       end
-      DIV(class: 'row') do
+      DIV(class: 'row',style:{'height':"calc(90vh)"}) do
         preview
         param
       end
@@ -14,6 +14,10 @@ class Editor < HyperComponent
   end
 
   after_mount do
+    init
+  end
+
+  def init
     HTTP.get("/flat_bootstrap.scss") do |response|
       @bootstrap =  response.body
 
@@ -80,29 +84,25 @@ class Editor < HyperComponent
 
   def reset
     DIV do
-      BUTTON(class:'btn btn-primary'){"Reset"}.on(:click) do
-        @variable=""
-        @custom=""
-        update_variables
-        compile_css
-        update_preview
-        mutate
+      BUTTON(class:'btn btn-outline-primary'){"Reset"}.on(:click) do
+        init
       end
     end
   end
 
-
   def top
     DIV do
-      input_variable
-      input_custom
-      reset
-      download
+      DIV(style:{display:'flex'}) do
+        input_variable
+        input_custom
+        reset
+        download
+      end
     end
   end
   
   def preview
-    IFRAME(src:"/preview", style: {border: 'none'}, class: 'col-9')
+    IFRAME(src:"/preview.html", style: {border: 'none'}, class: 'col-9')
   end
 
   def loader
@@ -113,40 +113,53 @@ class Editor < HyperComponent
   end
 
   def param
-    DIV(class:'param col-3',style: {'overflowY':'scroll','height':'700px'}) do
+    DIV(class:'param col-3',style: {'overflowY':'scroll',height:'100%'}) do
       unless @array.nil?
         FORM do
           @array.each do |v|
             DIV(class:'form-group') do
               LABEL{v['name']}
-              DIV(style: {'display':'flex','border':'none'}) do
-                INPUT(type: v['type'], class:'form-control', value:v['value'])
+              DIV(style: {'display':'flex','border':'none'},id:v['id']) do
+                INPUT(type: :text, class:'form-control', value:v['value'])
                 .on(:change) do |evt|
                   mutate v['value'] = evt.target.value
                   @timer&.abort
                   @timer = after(1) do
                     @ast = Sass.parse(@variable)
-                    @ast.replace(v['name'],v['type'],v['type'],v['value'])
+                    @ast.replace(v['name'],v['type'],v['value'])
                     @variable = @ast.stringify
                     compile_css
                     @timer = nil
                   end
-                  
+                end
+                @show = change_type(v['type'])
+                INPUT(type: v['type'], class:'form-control', value:v['value'],style:{display:@show,border:'none'})
+                .on(:change) do |evt|
+                  mutate v['value'] = evt.target.value
+                  @timer&.abort
+                  @timer = after(1) do
+                    @ast = Sass.parse(@variable)
+                    @ast.replace(v['name'],v['type'],v['value'])
+                    @variable = @ast.stringify
+                    compile_css
+                    @timer = nil
+                  end
                 end
                 SPAN(class: 'form-control',style: {'border':'none'}){v['unit']}
-                SELECT(class:'form-control',id: 'select',value: v['type']){
+                SELECT(class:'form-control',value: v['type']){
                   OPTION{'variable'}
                   OPTION{'color'}
                   OPTION{'number'}
                   OPTION{'string'}
                 }.on(:change) do |evt|
-                  old_type = v['type']
-                  new_type = evt.target.value
-                  @ast = Sass.parse(@variable)
-                  @ast.replace(v['name'],old_type,new_type,v['value'])
-                  v['type'] = new_type
-                  @variable = @ast.stringify
-                  compile_css
+                  mutate v['type'] = evt.target.value
+                  # v['type']= v['type']
+                  # change_type(v['id'],v['type'])
+                  #@ast = Sass.parse(@variable)
+                  #@ast.replace(v['name'],v['type'],v['value'])
+                  #v['type'] = new_type
+                  #@variable = @ast.stringify
+                  #compile_css
                 end
               end
             end
@@ -159,6 +172,14 @@ class Editor < HyperComponent
   def update_variables
     @ast = Sass.parse(@variable)
     @array = @ast.find_declaration_variables
+  end
+
+  def change_type(type)
+    if type== 'color'
+      return 'block'
+    else
+      return 'none'
+    end
   end
 
   def update_preview

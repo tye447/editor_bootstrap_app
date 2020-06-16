@@ -102,39 +102,39 @@ class Sass
       return @json
     end
 
-    def replace(variable_name,old_type,new_type,new_value)
+    def replace(variable_name,type,new_value)
       `$ = createQueryWrapper(#{@native});
       declarations = $().children('declaration');
-      new_type = #{new_type};
-      old_type = #{old_type};
+      type = #{type};
       variable_name = #{variable_name};
       new_value = #{new_value};
       variable_name = variable_name.substring(1);
       target = declarations.filter((n)=>$(n).children('property').value() === variable_name);
       values= target.children('value').children();
-      if(old_type=='color'){
-        old_type = 'color_hex';
+      types = values.map((n)=>n.node.type);
+      if(types.includes('function')){
+        old_type = 'function';
       }
-      if(new_type=='color'){
-        new_type = 'color_hex';
-      }
-      if(old_type=='string'){
+      else if(types.includes('string-double')){
         old_type = 'string-double';
       }
-      if(new_type=='string'){
-        new_type = 'string-double';
+      else if(types.includes('color_hex')){
+        old_type = 'color_hex';
       }
-      if(new_type=='color_hex'||new_type=='variable'){
+      else if(types.includes('variable')){
+        old_type = 'variable';
+      }
+      else{
+        old_type = 'string';
+      }
+      if(type=='color'){
+        type = 'color_hex';
+      }
+      if((type=='color_hex'||type=='variable')){
         new_value = new_value.substring(1);
       }
-      
-      if(old_type !== 'variable' || new_type !== 'color_hex'){
-        if(values.find('id').length()!==0){
-          old_type='id';
-        }
-      }
       values.find(old_type).replace((n)=>{
-        return {type:new_type,value: new_value}
+        return {type:type,value: new_value}
       });
       #{@native} = $().get(0);
       `
