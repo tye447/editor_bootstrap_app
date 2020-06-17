@@ -1,9 +1,11 @@
 class Editor < HyperComponent
   include Hyperstack::Router::Helpers
   render do
-    DIV(class: 'container-fluid') do
-      top
+    DIV(class: 'container-fluid d-flex flex-column') do
       DIV(class: 'row') do
+        top
+      end
+      DIV(class: 'row flex-fill') do
         preview
         param
       end
@@ -61,7 +63,7 @@ class Editor < HyperComponent
   end
 
   def top
-    DIV(class:"top row") do
+    DIV(class:"input-group-prepend") do
       input_variable_file
       input_custom_file
       reset
@@ -69,70 +71,69 @@ class Editor < HyperComponent
     end
   end
 
-  def icon
-    SVG(class: "bi bi-upload",width: "1em",height:"1em",viewBox:"0 0 16 16",fill:"currentColor",xmlns:"http://www.w3.org/2000/svg") do
-      PATH(fillRule:"evenodd","d":"M.5 8a.5.5 0 0 1 .5.5V12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5a.5.5 0 0 1 1 0V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8.5A.5.5 0 0 1 .5 8zM5 4.854a.5.5 0 0 0 .707 0L8 2.56l2.293 2.293A.5.5 0 1 0 11 4.146L8.354 1.5a.5.5 0 0 0-.708 0L5 4.146a.5.5 0 0 0 0 .708z")
-      PATH(fillRule:"evenodd","d":"M8 2a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0v-8A.5.5 0 0 1 8 2z")
-    end
+  # def icon
+  #   SVG(class: "bi bi-upload",width: "1em",height:"1em",viewBox:"0 0 16 16",fill:"currentColor",xmlns:"http://www.w3.org/2000/svg") do
+  #     PATH(fillRule:"evenodd","d":"M.5 8a.5.5 0 0 1 .5.5V12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5a.5.5 0 0 1 1 0V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8.5A.5.5 0 0 1 .5 8zM5 4.854a.5.5 0 0 0 .707 0L8 2.56l2.293 2.293A.5.5 0 1 0 11 4.146L8.354 1.5a.5.5 0 0 0-.708 0L5 4.146a.5.5 0 0 0 0 .708z")
+  #     PATH(fillRule:"evenodd","d":"M8 2a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0v-8A.5.5 0 0 1 8 2z")
+  #   end
 
-  end
+  # end
 
   def input_variable_file
     
-    DIV(class: "input_file mr-1") do
-      BUTTON(class:"btn btn-primary"){
-        icon
-        " Add Variable File "
-      }
-      INPUT(type: :file).on(:change) do |evt|
-        @file = evt.target.files[0].text()
-        @file.then{|result| 
-          @variable = result
-          update_variables
-          compile_css
-          mutate
-        } 
-      end
-    end
-
-
-    # DIV(class:'variable mr-1') do
-    #   DIV(class:'input-group') do
-    #     DIV(class:'input-group-prepend') do
-    #       SPAN(class: 'input-group-text', id:"fileVariable"){"Variable"}
-    #     end
-    #     DIV(class:'custom-file') do
-    #       INPUT(type: :file, class: 'custom-file-input', id:"fileVariable").on(:change) do |evt|
-    #         @file = evt.target.files[0].text()
-    #         @file.then{|result| 
-    #           @variable = result
-    #           update_variables
-    #           compile_css
-    #           mutate
-    #         } 
-    #       end
-    #       LABEL(class:"custom-file-label", htmlFor:'fileVariable'){"Choose file"}
-    #     end
+    # DIV(class: "input-group-prepend mr-1") do
+    #   BUTTON(class:"btn btn-primary"){
+    #     icon
+    #     " Add Variable File "
+    #   }
+    #   INPUT(type: :file).on(:change) do |evt|
+    #     @file = evt.target.files[0].text()
+    #     @file.then{|result| 
+    #       @variable = result
+    #       update_variables
+    #       compile_css
+    #       mutate
+    #     } 
     #   end
     # end
+
+
+    DIV(class:'input-group mr-1') do
+      # DIV(class:'input-group-prepend') do
+      #   SPAN(class: 'input-group-text', id:"fileVariable"){"Variable"}
+      # end
+      DIV(class:'custom-file') do
+        INPUT(type: :file, class: 'custom-file-input', id:"fileVariable").on(:change) do |evt|
+          @file = evt.target.files[0].text()
+          @file.then{|result| 
+            @variable = result
+            update_variables
+            compile_css
+            mutate
+          } 
+        end
+        LABEL(class:"custom-file-label", htmlFor:'fileVariable'){"Variable File"}
+      end
+    end
+    
   end
 
   def input_custom_file
-    DIV(class: "input_file mr-1") do
-      BUTTON(class:"btn btn-success"){
-        icon
-        " Add Custom File "
-      }
-      INPUT(type: :file).on(:change) do |evt|
-        @file = evt.target.files[0].text()
-        @file.then{|result| 
-          @custom = result
-          update_variables
-          compile_css
-          mutate
-        } 
-      end
-    end
+    # DIV(class: "input-group-prepend mr-1") do
+    #   BUTTON(class:"btn btn-success"){
+    #     icon
+    #     " Add Custom File "
+    #   }
+    #   INPUT(type: :file).on(:change) do |evt|
+    #     @file = evt.target.files[0].text()
+    #     @file.then{|result| 
+    #       @custom = result
+    #       update_variables
+    #       compile_css
+    #       mutate
+    #     } 
+    #   end
+    # end
 
     # DIV(class: "input_file") do
     #   BUTTON(class:"btn_input_file"){"Custom"}
@@ -147,28 +148,27 @@ class Editor < HyperComponent
     #   end
     # end
 
-    # DIV(class:'custom mr-1') do
-    #   DIV(class:'input-group') do
-    #     DIV(class:'input-group-prepend') do
-    #       SPAN(class: 'input-group-text', id:"fileCustom"){"Custom"}
-    #     end
-    #     DIV(class:'custom-file') do
-    #       INPUT(type: :file,class: 'custom-file-input', id:"fileCustom").on(:change) do |evt|
-    #         @file = evt.target.files[0].text()
-    #         @file.then{|result| 
-    #           @custom = result
-    #           compile_css
-    #           mutate
-    #         } 
-    #       end
-    #       LABEL(class:"custom-file-label", htmlFor:'fileCustom'){"Choose file"}
-    #     end
-    #   end
-    # end
+    DIV(class:'input-group mr-1') do
+      # DIV(class:'input-group-prepend') do
+      #   SPAN(class: 'input-group-text', id:"fileCustom"){"Custom"}
+      # end
+      DIV(class:'custom-file') do
+        INPUT(type: :file,class: 'custom-file-input', id:"fileCustom").on(:change) do |evt|
+          @file = evt.target.files[0].text()
+          @file.then{|result| 
+            @custom = result
+            compile_css
+            mutate
+          } 
+        end
+        LABEL(class:"custom-file-label", htmlFor:'fileCustom'){"Custom File"}
+      end
+    end
+    
   end
 
   def download
-    DIV(class:"mr-1") do 
+    DIV(class:"input-group-prepend mr-1") do 
       BUTTON(type: :button,class:"btn btn-outline-primary dropdown-toggle",'data-toggle':"dropdown",'aria-haspopup':"true",'aria-expanded':"false"){"Download"}
       DIV(class:"dropdown-menu"){
         A(class:"dropdown-item",href:"#"){"bootstrap.css"}.on(:click) do |evt|
@@ -196,19 +196,21 @@ class Editor < HyperComponent
   end
   
   def preview
-    IFRAME(src:"/preview.html", style: {border: 'none'}, class: 'col-9')
+    DIV(class:"col-md-9") do
+      IFRAME(src:"/preview.html")
+    end
   end
 
   def param
-    DIV(class:'param col-3') do
+    DIV(class:'param col-md-3') do
       unless @array.nil?
         FORM do
           @array.each do |v|
-            DIV(class:'row') do
-              DIV(class:'col') do
-                LABEL(class:"font-weight-bold"){v['name']}
+            DIV(class:'input-group-prepend mb-1') do
+              DIV(class:'col-8') do
+                LABEL(class:"font-weight-bold",style:{"lineHeight": "2.2"}){v['name']}
               end
-              DIV(class:'col') do
+              DIV(class:'col-4') do
                 SELECT(class:"form-control",value: v['type']){
                   OPTION{'variable'}
                   OPTION{'color'}
@@ -220,7 +222,7 @@ class Editor < HyperComponent
                 end
               end
             end
-            DIV(class:'row mb-3') do
+            DIV(class:'input-group mb-3') do
               send("input_#{v['type']}", v)
             end
           end
@@ -241,26 +243,41 @@ class Editor < HyperComponent
   end
 
   def input_variable(v)
-    INPUT(type: :text, class:"form-control", value:v['value'])
-    .on(:change) do |evt|
-      mutate v['value'] = evt.target.value
-      change_value(v)
-    end
-  end
-
-  def input_color(v)
-    INPUT(type: :text, class:"form-control col", value:v['value'])
-    .on(:change) do |evt|
-      mutate v['value'] = evt.target.value
-      change_value(v)
-    end
-    SPAN(class:'col'){
-      INPUT(type: v['type'], class:"icon-color field-radio input-color", value:v['value'])
+    DIV(class:"input-group-prepend col") do
+      INPUT(type: :text, class:"form-control", value:v['value'])
       .on(:change) do |evt|
         mutate v['value'] = evt.target.value
         change_value(v)
       end
-    }
+    end
+  end
+
+  def input_color(v)
+    DIV(class:"input-group-prepend col") do
+      INPUT(type: :text, class:"form-control", value:v['value'])
+      .on(:change) do |evt|
+        mutate v['value'] = evt.target.value
+        change_value(v)
+      end
+      INPUT(type: :color, class:"form-control", style:{"width":"50px","backgroundColor":"#e9ecef"}, value: v['value'])
+      .on(:change) do |evt|
+        mutate v['value'] = evt.target.value
+        change_value(v)
+      end
+    end
+   
+    # INPUT(type: :text, class:"form-control col", value:v['value'])
+    # .on(:change) do |evt|
+    #   mutate v['value'] = evt.target.value
+    #   change_value(v)
+    # end
+    # SPAN(class:'col'){
+    #   INPUT(type: v['type'], class:"icon-color field-radio input-color", value:v['value'])
+    #   .on(:change) do |evt|
+    #     mutate v['value'] = evt.target.value
+    #     change_value(v)
+    #   end
+    # }
   end
   
   def input_string(v)
@@ -268,12 +285,14 @@ class Editor < HyperComponent
   end
 
   def input_number(v)
-    INPUT(type: :number, class:"form-control col", value:v['value'])
-    .on(:change) do |evt|
-      mutate v['value'] = evt.target.value
-      change_value(v)
+    DIV(class:"input-group-prepend col") do
+      INPUT(type: :number, class:"form-control mr-1", value:v['value'])
+      .on(:change) do |evt|
+        mutate v['value'] = evt.target.value
+        change_value(v)
+      end
+      SPAN(class:"input_number",style:{"lineHeight": "2.2"}){v['unit']}
     end
-    SPAN(class:"col input_number"){v['unit']}
   end
 
   def loader
@@ -283,7 +302,4 @@ class Editor < HyperComponent
     end
   end
   
-  def test
-    puts "test"
-  end
 end

@@ -3,7 +3,6 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {parse,stringify} from 'scss-parser';
 import createQueryWrapper from 'query-ast';
-import { createPopper } from '@popperjs/core';
  // for opal/hyperloop modules to find React and others they must explicitly be saved
 // to the global space, otherwise webpack will encapsulate them locally here
 global.React = React;
