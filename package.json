@@ -2,8 +2,10 @@
   "name": "editor_bootstrap_app",
   "private": true,
   "dependencies": {
+    "@popperjs/core": "^2.4.2",
     "@rails/webpacker": "5.1.1",
     "jquery": "^3.4.1",
+    "popper.js": "^1.16.1",
     "query-ast": "^1.0.3",
     "react": "16",
     "react-dom": "16",

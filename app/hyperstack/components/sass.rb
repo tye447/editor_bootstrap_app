@@ -58,9 +58,20 @@ class Sass
         variable_name = stringify(declaration.children('property').get(0));
         declaration.children('value').children().first().remove();
         variable_value = stringify(declaration.children('value').get(0)).replace(' !default','');
-        
         types = declaration.children('value').children().map((n)=>n.node.type);
-        if(types.includes('color_hex')){
+        if(declaration.children('value').children().length()>=8){
+          variable_type = 'string';
+          variable_unit = '';
+        }
+        else if(types.includes('function')){
+          variable_type = 'string';
+          variable_unit = '';
+        }
+        else if(types.includes('string-double')){
+          variable_type = 'string';
+          variable_unit = '';
+        }
+        else if(types.includes('color_hex')){
           if(variable_value.length == 4){
             test = variable_value[0];
             for(var j=1;j<=3;j++){
@@ -71,23 +82,31 @@ class Sass
           }
           variable_type = "color";
         }
-        else if(types.includes('number')){
-          variable_type = "number";
-          var regexStr = variable_value.match(/[a-z]+|[^a-z]+/gi);
-          variable_value = regexStr[0];
-          if(regexStr.length!==1){
-            variable_unit = regexStr[1];
-          }
-        }
         else if(types.includes('variable')){
           variable_type = 'variable';
           variable_unit = '';
+        }
+        else if(types.includes('number')){
+          variable_type = "number";
+          test = declaration.find('number');
+          next = declaration.find('number').next();
+          variable_value = test.value();
+          if(next.value()==="rem"||next.value()==="em"||next.value()==="px"||next.value()==="%"){
+            variable_unit = next.value();
+          }
+          else if(next.value()==="s"){
+            variable_type = "string";
+            variable_value = stringify(declaration.children('value').get(0)).replace(' !default','');
+            variable_unit = "";
+          }
+          else{
+            variable_unit = "";
+          }
         }
         else{
           variable_type = 'string';
           variable_unit = '';
         }
-
 
         #{@json.push({
           "id"=>`i`,
