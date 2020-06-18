@@ -6,7 +6,7 @@ class Sass
   def self.compile(str)
     `Sass.compile(#{str}, #{lambda{|result| yield(::Hash.new(result)) }.to_n})`
   end
-
+  
   class Ast
     extend Native::Helpers # see https://github.com/opal/opal/blob/master/stdlib/native.rb
     native_accessor :type
