@@ -1,10 +1,12 @@
 class Editor < HyperComponent
   include Hyperstack::Router::Helpers
   render do
-    DIV(class: 'vh-100',style:{display:'grid', 'gridTemplateRows': '5fr 95fr','gridTemplateColumns': '9fr 3fr'}) do
+    DIV(class: 'vh-100',style: { display:'grid', 'gridTemplateRows': '5fr 95fr', 'gridTemplateColumns': '9fr 3fr' } ) do
       top
       preview
-      param
+      VariableParam( array_variable:@array_variables ).on(:variable_changed) do |variable|
+        change_variable_value(variable)
+      end
       loader
     end
   end
@@ -14,49 +16,63 @@ class Editor < HyperComponent
   end
 
   def init
-    @variable = ""
-    @default_variable =""
     show_loader
     HTTP.get("/functions.scss") do |res_func|
       @functions = res_func.body
-      HTTP.get("/flat_bootstrap.scss") do |response|
-        @bootstrap =  response.body
-        HTTP.get("/default_variable.scss") do |response2|
-          @default_variable =  response2.body
-          compile_css
-          update_variables
-          update_preview
-          mutate
+      HTTP.get("/flat_bootstrap.scss") do |res_bootstrap|
+        @bootstrap =  res_bootstrap.body
+        HTTP.get("/default_variable.scss") do |res_var|
+          @default_variable_file =  res_var.body
+          initial_compile_css
+          initial_variables
+          @ast = @default_ast.clone
+          @array_variables = @default_array_variables
         end
       end
     end
   end
 
   def update_variables
-    puts 'update_variables'
-    if @variable == "" 
-      @variable = @default_variable
+    unless @variable_file.nil?
+      @ast = Sass.parse(@variable_file)
+      @array_variables = @ast.find_declaration_variables
     end
-    @ast = Sass.parse(@variable)
-    @array = @ast.find_declaration_variables
   end
 
-  def update_preview
-    return unless @css_string.present?
+  def update_preview(css_string)
+    return unless css_string.present?
     `
       var frame = top.document.querySelector('iframe');
-      frame.contentWindow.postMessage(#{@css_string},'/');
+      frame.contentWindow.postMessage(#{css_string},'/');
     `
+  end
+
+  def initial_variables
+    unless @default_variable_file.nil?
+      @default_ast = Sass.parse(@default_variable_file)
+      @ast = @default_ast.clone
+      @default_array_variables = @default_ast.find_declaration_variables
+      @array_variables = @default_array_variables.clone
+    end
+  end
+
+  def initial_compile_css
+    show_loader
+    @initial_combinaison = @functions.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"
+    Sass.compile(@initial_combinaison) do |result|
+      @default_css_string = result['text']
+      update_preview(@default_css_string)
+      hide_loader
+      mutate
+    end
   end
 
   def compile_css
-    puts 'compile_css'
     show_loader
-    @combinaison = @functions.to_s+"\n"+@variable.to_s+"\n"+@default_variable.to_s+"\n"+@bootstrap.to_s+"\n"+@custom.to_s+"\n"
+    @combinaison = @functions.to_s+"\n"+@variable_file.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"+@custom_file.to_s+"\n"
     Sass.compile(@combinaison) do |result|
       @css_string = result['text']
-      update_preview
-      puts "end compile"
+      update_preview(@css_string)
       hide_loader
       mutate
     end
@@ -86,10 +102,10 @@ class Editor < HyperComponent
         INPUT(type: :file, class: 'custom-file-input', id:"fileVariable").on(:change) do |evt|
           @file = evt.target.files[0].text()
           @file.then{|result| 
-            @variable = result
+            mutate @variable_file = result
             update_variables
             compile_css
-            mutate
+            
           } 
         end
         LABEL(class:"custom-file-label", htmlFor:'fileVariable'){"Variable File"}
@@ -105,9 +121,9 @@ class Editor < HyperComponent
         INPUT(type: :file,class: 'custom-file-input', id:"fileCustom").on(:change) do |evt|
           @file = evt.target.files[0].text()
           @file.then{|result| 
-            @custom = result
+            mutate @custom_file = result
             compile_css
-            mutate
+            
           } 
         end
         LABEL(class:"custom-file-label", htmlFor:'fileCustom'){"Custom File"}
@@ -118,7 +134,16 @@ class Editor < HyperComponent
   def reset
     DIV(class:"mr-1") do
       BUTTON(class:'btn btn-danger'){"Reset"}.on(:click) do
-        init
+        show_loader
+        @array_variables = @default_ast.find_declaration_variables
+        update_preview(@default_css_string)
+        @css_string = @default_css_string
+        @variable_file = @default_variable_file
+        @custom_file = ""
+        ::Element.find('#fileVariable').val("");
+        ::Element.find('#fileCustom').val("");
+        hide_loader
+        mutate
       end
     end
   end
@@ -139,84 +164,31 @@ class Editor < HyperComponent
         end
         A(class:"dropdown-item",href:"#"){"variable.scss"}.on(:click) do |evt|
           evt.prevent_default
-          `download(#{@variable}, "variable.scss", "text/plain");`
+          `download(#{@variable_file}, "variable.scss", "text/plain");`
         end
         A(class:"dropdown-item",href:"#"){"custom.scss"}.on(:click) do |evt|
           evt.prevent_default
-          `download(#{@custom}, "custom.scss", "text/plain");`
+          `download(#{@custom_file}, "custom.scss", "text/plain");`
         end
       }
     end
   end
 
-  
-  
   def preview
     DIV(style:{'gridColumn':'1','gridRow':'2'}) do
       IFRAME(class:"w-100 h-100 border-0", src:"/preview.html")
     end
   end
 
-  def param
-    DIV(class:'col', style:{'gridColumn':'2','gridRow':'2',overflowY: 'auto'}) do
-      unless @array.nil?
-        FORM do
-          @array.each do |v|
-            Input(v:v).on(:value_changed) do |v_bis|
-              change_value(v_bis)
-            end
-          end
-        end
+  def change_variable_value(variable)
+    unless @ast.nil?
+      @timer&.abort
+      @timer = after(1) do
+        @ast.replace(variable['name'],variable['type'],variable['value'])
+        @variable_file = @ast.stringify
+        compile_css
+        @timer = nil
       end
-    end
-  end
-
-  def change_value(v)
-    @timer&.abort
-    @timer = after(1) do
-      @ast.replace(v['name'],v['type'],v['value'])
-      @variable = @ast.stringify
-      compile_css
-      @timer = nil
-    end
-  end
-
-  def input_variable(v)
-    INPUT(type: :text, class:"form-control", value:v['value'])
-    .on(:change) do |evt|
-      mutate v['value'] = evt.target.value
-      change_value(v)
-    end
-  end
-
-  def input_color(v)
-    puts "input_color"
-    DIV(class:"input-group-prepend") do
-      INPUT(type: :color, class:"form-control", style:{"width":"50px","backgroundColor":"#e9ecef"}, value: v['value'])
-      .on(:change) do |evt|
-        mutate v['value'] = evt.target.value
-        change_value(v)
-      end
-    end
-    INPUT(type: :text, class:"form-control", value:v['value'])
-    .on(:change) do |evt|
-      mutate v['value'] = evt.target.value
-      change_value(v)
-    end
-  end
-  
-  def input_string(v)
-    input_variable(v)
-  end
-
-  def input_number(v)
-    INPUT(type: :number, class:"form-control", value:v['value'])
-    .on(:change) do |evt|
-      mutate v['value'] = evt.target.value
-      change_value(v)
-    end
-    DIV(class:"input-group-append") do
-      SPAN(class:"input-group-text"){v['unit']}
     end
   end
 

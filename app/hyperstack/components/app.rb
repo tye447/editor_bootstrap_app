@@ -5,8 +5,9 @@ class App < HyperComponent
 #     Route('/preview',exact: true) do
 #       Preview()
 #     end
-    Route('/',exact: true) do
-      Editor()
-    end
+    # Route('/',exact: true) do
+    #   Editor()
+    # end
+    Editor()
   end
 end
