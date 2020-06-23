@@ -1,11 +1,12 @@
 class Input < ::HyperComponent
-  param :variable 
-  
+  param :variable
+
   fires :value_changed
   render(){ content }
-  
+
   def content
     DIV do
+      #puts "input"
       title
       DIV(class:'input-group mb-3') do
         send("input_#{variable['type']}", variable)
@@ -23,7 +24,6 @@ class Input < ::HyperComponent
         OPTION{'string'}
       }.on(:change) do |evt|
         variable['type'] = evt.target.value
-        puts "title"
         mutate
       end
     end
@@ -39,7 +39,7 @@ class Input < ::HyperComponent
 
   def input_color(variable)
     DIV(class:"input-group-prepend") do
-      INPUT(type: :color, class:"form-control", style:{"width":"50px","backgroundColor":"#e9ecef"}, value: variable['value'])
+      INPUT(type: :color, class:"form-control input-group-text", style:{"width":"50px","backgroundColor":"#e9ecef"}, value: variable['value'])
       .on(:change) do |evt|
       mutate variable['value'] = evt.target.value
       value_changed!(variable)
@@ -51,7 +51,7 @@ class Input < ::HyperComponent
       value_changed!(variable)
     end
   end
-  
+
   def input_string(variable)
     input_variable(variable)
   end
@@ -63,6 +63,17 @@ class Input < ::HyperComponent
       value_changed!(variable)
     end
     DIV(class:"input-group-append") do
+      # SELECT(class:"form-control w-auto input-group-text",value: variable['unit']){
+      #   OPTION{'rem'}
+      #   OPTION{'em'}
+      #   OPTION{'px'}
+      #   OPTION{''}
+      #   OPTION{'%'}
+      # }.on(:change) do |evt|
+      #   variable['unit'] = evt.target.value
+      #   value_changed!(variable)
+      #   mutate
+      # end
       SPAN(class:"input-group-text"){variable['unit']}
     end
   end

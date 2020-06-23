@@ -1,12 +1,12 @@
 class Sass
+
   def self.parse(str)
-      Ast.new(`parse(#{str})`)
+    Ast.new(`parse(#{str})`)
   end
-  
+
   def self.compile(str)
     `Sass.compile(#{str}, #{lambda{|result| yield(::Hash.new(result)) }.to_n})`
   end
-  
   class Ast
     extend Native::Helpers # see https://github.com/opal/opal/blob/master/stdlib/native.rb
     native_accessor :type
@@ -30,22 +30,22 @@ class Sass
       result = declarations.find(query);
       length = result.length();
       for(i = 0;i<length;i++){
-        type = result.eq(i).map((n)=>n.node.type).toString();
-        value = result.eq(i).value();
-        if(type=='color_hex'){
-            type = 'color';
-            value ='#'+value;
-        }
-        if(type=='variable'){
-            value ='$'+value;
-        }
-        #{@json.push({"id"=>`i`,"type"=>`type`,"value"=>`value`})}
+      type = result.eq(i).map((n)=>n.node.type).toString();
+      value = result.eq(i).value();
+      if(type=='color_hex'){
+        type = 'color';
+        value ='#'+value;
+      }
+      if(type=='variable'){
+        value ='$'+value;
+      }
+      #{@json.push({"id"=>`i`,"type"=>`type`,"value"=>`value`})}
       }
       `
       return @json
     end
 
-    
+
     def find_declaration_variables
       @json = []
       `
@@ -59,6 +59,7 @@ class Sass
         declaration.children('value').children().first().remove();
         variable_value = stringify(declaration.children('value').get(0)).replace(' !default','');
         types = declaration.children('value').children().map((n)=>n.node.type);
+
         if(declaration.children('value').children().length()>=8){
           variable_type = 'string';
           variable_unit = '';
@@ -78,7 +79,7 @@ class Sass
               test += variable_value[j];
               test += variable_value[j];
             }
-            variable_value = test; 
+            variable_value = test;
           }
           variable_type = "color";
         }
@@ -107,7 +108,6 @@ class Sass
           variable_type = 'string';
           variable_unit = '';
         }
-
         #{@json.push({
           "id"=>`i`,
           "name"=>`variable_name`,
@@ -132,36 +132,35 @@ class Sass
       values= target.children('value').children();
       types = values.map((n)=>n.node.type);
       if(types.includes('function')){
-        old_type = 'function';
+      old_type = 'function';
       }
       else if(types.includes('string-double')){
-        old_type = 'string-double';
+      old_type = 'string-double';
       }
       else if(types.includes('color_hex')){
-        old_type = 'color_hex';
+      old_type = 'color_hex';
       }
       else if(types.includes('variable')){
-        old_type = 'variable';
+      old_type = 'variable';
       }
       else{
-        old_type = 'string';
+      old_type = 'string';
       }
       if(type=='color'){
-        type = 'color_hex';
+      type = 'color_hex';
       }
       if((type=='color_hex'||type=='variable')){
-        new_value = new_value.substring(1);
+      new_value = new_value.substring(1);
       }
       values.find(old_type).replace((n)=>{
-        return {type:type,value: new_value}
+      return {type:type,value: new_value}
       });
       #{@native} = $().get(0);
       `
     end
 
     def inspect
-      %Q[#<Sass::Ast type="#{type}" value=#{value.inspect}>]      
+      %Q[#<Sass::Ast type="#{type}" value=#{value.inspect}>]
     end
   end
-    
 end

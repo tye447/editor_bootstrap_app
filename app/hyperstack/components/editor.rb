@@ -1,10 +1,13 @@
 class Editor < HyperComponent
   include Hyperstack::Router::Helpers
+
+  CLIENT_SIDE_COMPILATION = true
+
   render do
     DIV(class: 'vh-100',style: { display:'grid', 'gridTemplateRows': '5fr 95fr', 'gridTemplateColumns': '9fr 3fr' } ) do
       top
       preview
-      VariableParam( array_variable:@array_variables ).on(:variable_changed) do |variable|
+      VariablePanel( array_variable:@array_variables ).on(:variable_changed) do |variable|
         change_variable_value(variable)
       end
       loader
@@ -23,10 +26,11 @@ class Editor < HyperComponent
         @bootstrap =  res_bootstrap.body
         HTTP.get("/default_variable.scss") do |res_var|
           @default_variable_file =  res_var.body
-          initial_compile_css
+          compile_css(initial: true)
           initial_variables
           @ast = @default_ast.clone
           @array_variables = @default_array_variables
+          mutate
         end
       end
     end
@@ -56,25 +60,39 @@ class Editor < HyperComponent
     end
   end
 
-  def initial_compile_css
+  def compile_css(options = {})
     show_loader
-    @initial_combinaison = @functions.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"
-    Sass.compile(@initial_combinaison) do |result|
-      @default_css_string = result['text']
-      update_preview(@default_css_string)
-      hide_loader
-      mutate
+    if options[:initial]
+      @combinaison = @functions.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"
+    else
+      @combinaison = @functions.to_s+"\n"+@variable_file.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"+@custom_file.to_s+"\n"
     end
-  end
 
-  def compile_css
-    show_loader
-    @combinaison = @functions.to_s+"\n"+@variable_file.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"+@custom_file.to_s+"\n"
-    Sass.compile(@combinaison) do |result|
-      @css_string = result['text']
-      update_preview(@css_string)
-      hide_loader
-      mutate
+    after(0) do
+      if CLIENT_SIDE_COMPILATION
+        Sass.compile(@combinaison) do |result|
+          if result['status']==1
+            errorMessage = "line: " +result['line'].to_s+"; column:"+result['column'].to_s+"; message:"+result['message'].to_s
+            alert errorMessage
+          else
+            @css_string = result['text']
+            if options[:initial]
+              @default_css_string  = @css_string
+            end
+            update_preview(@css_string)
+          end
+          hide_loader
+        end
+      else
+        HTTP.post("/compile_css", payload: {scss: @combinaison}) do |response|
+          @css_string = response.json['result']
+          if options[:initial]
+            @default_css_string  = @css_string
+          end
+          update_preview(@css_string)
+          hide_loader
+        end
+      end
     end
   end
 
@@ -101,30 +119,30 @@ class Editor < HyperComponent
       DIV(class:'custom-file') do
         INPUT(type: :file, class: 'custom-file-input', id:"fileVariable").on(:change) do |evt|
           @file = evt.target.files[0].text()
-          @file.then{|result| 
+          @file.then{|result|
             mutate @variable_file = result
             update_variables
             compile_css
-            
-          } 
+
+          }
         end
         LABEL(class:"custom-file-label", htmlFor:'fileVariable'){"Variable File"}
       end
     end
-    
+
   end
 
   def input_custom_file
-    
+
     DIV(class:'input-group mr-1 w-auto') do
       DIV(class:'custom-file') do
         INPUT(type: :file,class: 'custom-file-input', id:"fileCustom").on(:change) do |evt|
           @file = evt.target.files[0].text()
-          @file.then{|result| 
+          @file.then{|result|
             mutate @custom_file = result
             compile_css
-            
-          } 
+
+          }
         end
         LABEL(class:"custom-file-label", htmlFor:'fileCustom'){"Custom File"}
       end
@@ -150,12 +168,12 @@ class Editor < HyperComponent
 
   def spacer
     DIV(class:"flex-grow-1") do
-      
+
     end
   end
-  
+
   def download
-    DIV(class:"mr-1") do 
+    DIV(class:"mr-1") do
       BUTTON(type: :button,class:"btn btn-outline-primary dropdown-toggle",'data-toggle':"dropdown",'aria-haspopup':"true",'aria-expanded':"false"){"Download"}
       DIV(class:"dropdown-menu"){
         A(class:"dropdown-item",href:"#"){"bootstrap.css"}.on(:click) do |evt|
@@ -175,9 +193,7 @@ class Editor < HyperComponent
   end
 
   def preview
-    DIV(style:{'gridColumn':'1','gridRow':'2'}) do
-      IFRAME(class:"w-100 h-100 border-0", src:"/preview.html")
-    end
+    IFRAME(class:"w-100 h-100 border-0", style:{'gridArea': ' 2 / 1 / auto / auto'}, src:"/preview.html")
   end
 
   def change_variable_value(variable)
@@ -192,11 +208,12 @@ class Editor < HyperComponent
     end
   end
 
+
   def loader
     DIV(id: 'loader', class: 'spinner-border position-absolute',style:{ display: "none", top: "50%", left: "50%", width: "6em", height: "6em" }) do
       SPAN(class: 'sr-only') do
       end
     end
   end
-  
+
 end
