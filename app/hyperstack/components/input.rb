@@ -45,10 +45,15 @@ class Input < ::HyperComponent
       value_changed!(variable)
       end
     end
-    INPUT(type: :text, class:"form-control", value:variable['value'])
+    INPUT(id: variable['id'], type: :text, class: "form-control", value: variable['value'])
     .on(:change) do |evt|
       mutate variable['value'] = evt.target.value
       value_changed!(variable)
+    end
+    .on(:blur) do |evt|
+      new_value = ::Element.find('#'+variable['id'].to_s).val()
+      puts new_value
+      mutate variable['value'] = hex_conv(new_value.to_s)
     end
   end
 
@@ -63,19 +68,28 @@ class Input < ::HyperComponent
       value_changed!(variable)
     end
     DIV(class:"input-group-append") do
-      # SELECT(class:"form-control w-auto input-group-text",value: variable['unit']){
-      #   OPTION{'rem'}
-      #   OPTION{'em'}
-      #   OPTION{'px'}
-      #   OPTION{''}
-      #   OPTION{'%'}
-      # }.on(:change) do |evt|
-      #   variable['unit'] = evt.target.value
-      #   value_changed!(variable)
-      #   mutate
-      # end
-      SPAN(class:"input-group-text"){variable['unit']}
+      SELECT(class:"form-control border-0",value: variable['unit']){
+        OPTION{'rem'}
+        OPTION{'em'}
+        OPTION{'px'}
+        OPTION{''}
+        OPTION{'%'}
+      }.on(:change) do |evt|
+        variable['unit'] = evt.target.value
+        value_changed!(variable)
+        mutate
+      end
+      # SPAN(class:"input-group-text"){variable['unit']}
     end
+  end
+
+  def hex_conv(hex)
+    if hex.length == 4 && hex[0] == '#'
+      result = hex[0]+hex[1]+hex[1]+hex[2]+hex[2]+hex[3]+hex[3]
+    else
+      result = hex
+    end
+    return result
   end
 
 end

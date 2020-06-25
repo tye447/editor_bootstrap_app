@@ -60,48 +60,35 @@ class Sass
         variable_value = stringify(declaration.children('value').get(0)).replace(' !default','');
         types = declaration.children('value').children().map((n)=>n.node.type);
 
-        if(declaration.children('value').children().length()>=8){
-          variable_type = 'string';
+
+        if(variable_value.indexOf('rgb')==0 || variable_value.indexOf('#')==0){
+          variable_type = 'color';
           variable_unit = '';
-        }
-        else if(types.includes('function')){
-          variable_type = 'string';
-          variable_unit = '';
-        }
-        else if(types.includes('string-double')){
-          variable_type = 'string';
-          variable_unit = '';
-        }
-        else if(types.includes('color_hex')){
-          if(variable_value.length == 4){
-            test = variable_value[0];
-            for(var j=1;j<=3;j++){
-              test += variable_value[j];
-              test += variable_value[j];
-            }
-            variable_value = test;
+          if(variable_value.indexOf('#')==0 && variable_value.length == 4){
+            tmp = variable_value[0]+variable_value[1]+variable_value[1];
+            tmp = tmp+variable_value[2]+variable_value[2];
+            tmp = tmp+variable_value[3]+variable_value[3];
+            variable_value = tmp;
           }
-          variable_type = "color";
+
+
+
         }
-        else if(types.includes('variable')){
+        else if(variable_value.indexOf('$')==0){
           variable_type = 'variable';
           variable_unit = '';
         }
         else if(types.includes('number')){
-          variable_type = "number";
-          test = declaration.find('number');
-          next = declaration.find('number').next();
-          variable_value = test.value();
-          if(next.value()==="rem"||next.value()==="em"||next.value()==="px"||next.value()==="%"){
-            variable_unit = next.value();
-          }
-          else if(next.value()==="s"){
-            variable_type = "string";
-            variable_value = stringify(declaration.children('value').get(0)).replace(' !default','');
-            variable_unit = "";
-          }
-          else{
-            variable_unit = "";
+          parsed = parseUnit(variable_value);
+          if(parsed.length <= 2){
+            variable_type = "number";
+            variable_value = parsed[0];
+            if(parsed[1] === 'px' || parsed[1] === 'em' || parsed[1] === 'rem' || parsed[1] === '%'){
+              variable_unit = parsed[1];
+            }
+            else{
+              variable_unit = '';
+            }
           }
         }
         else{
@@ -129,32 +116,89 @@ class Sass
       new_value = #{new_value};
       variable_name = variable_name.substring(1);
       target = declarations.filter((n)=>$(n).children('property').value() === variable_name);
+
       values= target.children('value').children();
       types = values.map((n)=>n.node.type);
-      if(types.includes('function')){
-      old_type = 'function';
+
+      if(values.first().value().includes(' ')){
+        values.find('space').first().replace((n)=>{
+          return {type: 'space', value: ' '}
+        });
       }
-      else if(types.includes('string-double')){
-      old_type = 'string-double';
+
+      if(target.children('value').value().includes('!default')){
+        values.find('operator').last().remove();
+        values.find('identifier').last().remove();
+        values.find('space').last().remove();
       }
-      else if(types.includes('color_hex')){
-      old_type = 'color_hex';
+
+      variable_value = stringify(target.children('value').get(0)).replace(' !default','').substring(1);
+
+      console.log(variable_value);
+      if(variable_value.indexOf('rgb')==0 || variable_value.indexOf('#')==0){
+        old_type = 'color_hex';
       }
-      else if(types.includes('variable')){
-      old_type = 'variable';
+      else if(variable_value.indexOf('$')==0){
+        old_type = 'variable';
+        variable_value = variable_value.substring(1);
+      }
+
+      else if(!isNaN(Number(variable_value))){
+        old_type = 'number';
       }
       else{
-      old_type = 'string';
+        old_type = 'string';
+      }
+
+      if(new_value.indexOf('rgb')==0 || new_value.indexOf('#')==0){
+        new_value_type = 'color_hex';
+        new_value = new_value.substring(1);
+      }
+      else if(new_value.indexOf('$')==0){
+        new_value_type = 'variable';
+        new_value = new_value.substring(1);
+      }
+
+      else if(!isNaN(Number(new_value))){
+        new_value_type = 'number';
+      }
+      else{
+        new_value_type = 'string';
+      }
+
+      if(new_value_type !== 'string' && old_type !=='string'){
+
+        values.find(old_type).replace((n)=>{
+          return {type: new_value_type, value: new_value}
+        });
+      }
+      else{
+        console.log(target.children('value').value())
+      }
+      /*if(types.includes('function')){
+        old_type = 'function';
+      }
+      else if(types.includes('string-double')){
+        old_type = 'string-double';
+      }
+      else if(types.includes('color_hex')){
+        old_type = 'color_hex';
+      }
+      else if(types.includes('variable')){
+        old_type = 'variable';
+      }
+      else{
+        old_type = 'string';
       }
       if(type=='color'){
-      type = 'color_hex';
+        type = 'color_hex';
       }
       if((type=='color_hex'||type=='variable')){
-      new_value = new_value.substring(1);
+        new_value = new_value.substring(1);
       }
-      values.find(old_type).replace((n)=>{
-      return {type:type,value: new_value}
-      });
+        values.find(old_type).replace((n)=>{
+          return {type:type,value: new_value}
+        });*/
       #{@native} = $().get(0);
       `
     end
