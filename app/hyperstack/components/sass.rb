@@ -23,26 +23,7 @@ class Sass
     end
 
     def find(query)
-      @json = []
-      `
-      $ = createQueryWrapper(#{@native});
-      declarations =  $().children('declaration');
-      result = declarations.find(query);
-      length = result.length();
-      for(i = 0;i<length;i++){
-      type = result.eq(i).map((n)=>n.node.type).toString();
-      value = result.eq(i).value();
-      if(type=='color_hex'){
-        type = 'color';
-        value ='#'+value;
-      }
-      if(type=='variable'){
-        value ='$'+value;
-      }
-      #{@json.push({"id"=>`i`,"type"=>`type`,"value"=>`value`})}
-      }
-      `
-      return @json
+
     end
 
 
@@ -51,17 +32,15 @@ class Sass
       `
       $ = createQueryWrapper(#{@native});
       declarations =  $().children('declaration');
-      length = declarations.length();
-      for(i = 0;i<length;i++){
-        variable_unit = '';
+      for(i = 0; i<declarations.length(); i++){
         declaration = declarations.eq(i);
+
+        // get variable name and value
         variable_name = stringify(declaration.children('property').get(0));
-        declaration.children('value').children().first().remove();
-        variable_value = stringify(declaration.children('value').get(0)).replace(' !default','');
-        types = declaration.children('value').children().map((n)=>n.node.type);
+        variable_value = stringify(declaration.children('value').get(0)).replace(' !default','').replace(/(^\s*)|(\s*$)/g,"");
 
-
-        if(variable_value.indexOf('rgb')==0 || variable_value.indexOf('#')==0){
+        // variables type 'color'
+        if(variable_value.indexOf('#')==0){
           variable_type = 'color';
           variable_unit = '';
           if(variable_value.indexOf('#')==0 && variable_value.length == 4){
@@ -70,31 +49,36 @@ class Sass
             tmp = tmp+variable_value[3]+variable_value[3];
             variable_value = tmp;
           }
-
-
-
         }
+
+        // variables type 'variable'
         else if(variable_value.indexOf('$')==0){
           variable_type = 'variable';
           variable_unit = '';
         }
-        else if(types.includes('number')){
+
+        // variables type 'number'
+        else if(!!variable_value.match(/\d/g)){
+          // variables with or without unit
           parsed = parseUnit(variable_value);
-          if(parsed.length <= 2){
+          if(parsed[1] === 'px' || parsed[1] === 'em' || parsed[1] === 'rem' || parsed[1] === '%' || parsed[1] === ''){
             variable_type = "number";
             variable_value = parsed[0];
-            if(parsed[1] === 'px' || parsed[1] === 'em' || parsed[1] === 'rem' || parsed[1] === '%'){
-              variable_unit = parsed[1];
-            }
-            else{
-              variable_unit = '';
-            }
+            variable_unit = parsed[1];
+          }
+          else{
+            variable_type = "string";
+            variable_unit = '';
           }
         }
+
+        // variables type 'string'
         else{
           variable_type = 'string';
           variable_unit = '';
         }
+
+        // add variable to the variable array
         #{@json.push({
           "id"=>`i`,
           "name"=>`variable_name`,
@@ -108,97 +92,61 @@ class Sass
       return @json
     end
 
-    def replace(variable_name,type,new_value)
+    def replace(variable, options = {})
       `$ = createQueryWrapper(#{@native});
       declarations = $().children('declaration');
-      type = #{type};
-      variable_name = #{variable_name};
-      new_value = #{new_value};
-      variable_name = variable_name.substring(1);
-      target = declarations.filter((n)=>$(n).children('property').value() === variable_name);
+      variable_name = #{variable['name']};
+      new_value = #{variable['value']};
+      new_unit = #{variable['unit']};
+      option_change = #{options[:change].to_s};
 
-      values= target.children('value').children();
-      types = values.map((n)=>n.node.type);
+      // find declaration of the variable changed
+      target = declarations.filter((n)=>stringify($(n).children('property').get(0)) === variable_name);
 
-      if(values.first().value().includes(' ')){
-        values.find('space').first().replace((n)=>{
-          return {type: 'space', value: ' '}
-        });
-      }
+      // remove extra space before the value of the variable
+      target.children('value').children().first().replace((n)=>{
+        return {type: 'space', value: ' '}
+      });
 
+      // delete '!default'
       if(target.children('value').value().includes('!default')){
-        values.find('operator').last().remove();
-        values.find('identifier').last().remove();
-        values.find('space').last().remove();
+        target.children('value').find('operator').last().remove();
+        target.children('value').find('identifier').last().remove();
+        target.children('value').find('space').last().remove();
       }
 
-      variable_value = stringify(target.children('value').get(0)).replace(' !default','').substring(1);
-
-      console.log(variable_value);
-      if(variable_value.indexOf('rgb')==0 || variable_value.indexOf('#')==0){
-        old_type = 'color_hex';
-      }
-      else if(variable_value.indexOf('$')==0){
-        old_type = 'variable';
-        variable_value = variable_value.substring(1);
-      }
-
-      else if(!isNaN(Number(variable_value))){
-        old_type = 'number';
-      }
-      else{
-        old_type = 'string';
-      }
-
-      if(new_value.indexOf('rgb')==0 || new_value.indexOf('#')==0){
-        new_value_type = 'color_hex';
-        new_value = new_value.substring(1);
-      }
-      else if(new_value.indexOf('$')==0){
-        new_value_type = 'variable';
-        new_value = new_value.substring(1);
-      }
-
-      else if(!isNaN(Number(new_value))){
-        new_value_type = 'number';
-      }
-      else{
-        new_value_type = 'string';
-      }
-
-      if(new_value_type !== 'string' && old_type !=='string'){
-
-        values.find(old_type).replace((n)=>{
-          return {type: new_value_type, value: new_value}
+      if(option_change == 'value'){
+        // replace the value
+        new_value_ast = parse(new_value.toString())
+        target.children('value').first().children().eq(1).replace((n)=>{
+          return {type: new_value_ast.value[0].type, value: new_value_ast.value[0].value}
         });
       }
-      else{
-        console.log(target.children('value').value())
+
+      if(option_change == 'unit'){
+        // replace the unit
+        children_value = target.children('value').first().children();
+        node_value = children_value.eq(1);
+        if(children_value.length() > 2){
+          node_unit = children_value.eq(2);
+        }
+
+        if(new_unit !== ''){
+          node_new_unit = parse(new_unit).value[0];
+          if(children_value.length() > 2){
+            node_unit.replace((n)=>{
+              return {type: node_new_unit.type, value: new_unit}
+            });
+          }
+          else if(children_value.length() == 2){
+            node_value.after(node_new_unit);
+          }
+        }
+        else{
+          node_unit.remove();
+        }
       }
-      /*if(types.includes('function')){
-        old_type = 'function';
-      }
-      else if(types.includes('string-double')){
-        old_type = 'string-double';
-      }
-      else if(types.includes('color_hex')){
-        old_type = 'color_hex';
-      }
-      else if(types.includes('variable')){
-        old_type = 'variable';
-      }
-      else{
-        old_type = 'string';
-      }
-      if(type=='color'){
-        type = 'color_hex';
-      }
-      if((type=='color_hex'||type=='variable')){
-        new_value = new_value.substring(1);
-      }
-        values.find(old_type).replace((n)=>{
-          return {type:type,value: new_value}
-        });*/
+
       #{@native} = $().get(0);
       `
     end

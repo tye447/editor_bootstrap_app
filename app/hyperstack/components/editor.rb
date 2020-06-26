@@ -104,7 +104,11 @@ class Editor < HyperComponent
         end
         A(class:"dropdown-item",href:"#"){"variable.scss"}.on(:click) do |evt|
           evt.prevent_default
-          `download(#{@variable_file}, "variable.scss", "text/plain");`
+          if @variable_file == ""
+            `download(#{@default_variable_file}, "variable.scss", "text/plain");`
+          else
+            `download(#{@variable_file}, "variable.scss", "text/plain");`
+          end
         end
         A(class:"dropdown-item",href:"#"){"custom.scss"}.on(:click) do |evt|
           evt.prevent_default
@@ -119,9 +123,9 @@ class Editor < HyperComponent
   end
 
   def variable_panel
-    unless @array_variables.nil?
-      VariablePanel(array_variables: @array_variables).on(:variable_changed) do |variable|
-        change_variable_value(variable)
+    unless @variable_array.nil?
+      VariablePanel(variable_array: @variable_array).on(:variable_changed) do |variable, change_choice|
+        change_variable_value(variable, change_choice)
       end
     end
   end
@@ -152,17 +156,30 @@ class Editor < HyperComponent
   def update_variables
     unless @variable_file.nil?
       @var_ast = Sass.parse(@variable_file)
-      @var_variables = @var_ast.find_declaration_variables
-      @array_variables = @default_array_variables
-      confusion_arraies
-      mutate
+      unless @var_ast.nil?
+        @var_variables = @var_ast.find_declaration_variables
+        @variable_array = @default_variable_array
+        confusion_arraies
+        mutate
+      end
     end
   end
 
   def confusion_arraies
-    @var_variables.each do |item|
-      target = @array_variables.find{|e| e['name'] == item['name']}
-      target['value'] = item['value']
+    unless @var_variables.nil?
+      @var_variables.each do |item|
+        target = @variable_array.find{|e| e['name'] == item['name']}
+        unless target.nil?
+          if target['value'] != item['value']
+            @ast.replace(item, change: 'value')
+            target['value'] = item['value']
+          end
+          if target['unit'] != item['unit']
+            @ast.replace(item, change: 'unit')
+            target['unit'] = item['unit']
+          end
+        end
+      end
     end
   end
 
@@ -176,18 +193,23 @@ class Editor < HyperComponent
 
   def initial_variables
     unless @default_variable_file.nil?
+      # init custome file and variable file
       @custom_file = ""
       @variable_file = ""
+      # store the default ast
       @default_ast = Sass.parse(@default_variable_file)
       @ast = Sass.parse(@default_variable_file)
-      @default_array_variables = @default_ast.find_declaration_variables
-      @array_variables = @ast.find_declaration_variables
+      # store the default variables array
+      @default_variable_array = @default_ast.find_declaration_variables
+      @variable_array = @ast.find_declaration_variables
       ::Element.find('#fileVariable').val("");
       ::Element.find('#fileCustom').val("");
     end
   end
 
   def compile_css(options = {})
+    # compile as a css string
+
     show_loader
     if options[:initial]
       @combinaison = @functions.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"
@@ -198,11 +220,33 @@ class Editor < HyperComponent
     after(0) do
       if CLIENT_SIDE_COMPILATION
         Sass.compile(@combinaison) do |result|
-          if result['status']==1
-            @errorMessage = result['message'].to_s
+          unless result.nil?
+            if result['status']==1
+              # return error message
+              @errorMessage = result['message'].to_s
+              show_error(@errorMessage)
+            else
+              # return css string and apply it into the iframe
+              @css_string = result['text']
+              if options[:initial]
+                @default_css_string  = @css_string
+              end
+              update_preview(@css_string)
+            end
+            hide_loader
+          end
+        end
+      else
+        HTTP.post("/compile_css", payload: {scss: @combinaison}) do |response|
+          # get response status
+          @status = response.json['status']
+          if(@status != 'ok')
+            # return error message
+            @errorMessage = response.json['message'].to_s
             show_error(@errorMessage)
           else
-            @css_string = result['text']
+            # return css string and apply it into the iframe
+            @css_string = response.json['message'].to_s
             if options[:initial]
               @default_css_string  = @css_string
             end
@@ -210,15 +254,7 @@ class Editor < HyperComponent
           end
           hide_loader
         end
-      else
-        HTTP.post("/compile_css", payload: {scss: @combinaison}) do |response|
-          @css_string = response.json['result']
-          if options[:initial]
-            @default_css_string  = @css_string
-          end
-          update_preview(@css_string)
-          hide_loader
-        end
+
       end
     end
   end
@@ -240,11 +276,12 @@ class Editor < HyperComponent
     ::Element.find('#error').hide()
   end
 
-  def change_variable_value(variable)
-    unless @ast.nil?
+  def change_variable_value(variable, change_choice)
+    unless @ast.nil? || variable.nil?
       @timer&.abort
       @timer = after(1) do
-        @ast.replace(variable['name'],variable['type'],variable['value'])
+        # replace the value or the unit of the variable
+        @ast.replace(variable, change: change_choice)
         @variable_file = @ast.stringify
         puts @variable_file
         compile_css(initial: false)

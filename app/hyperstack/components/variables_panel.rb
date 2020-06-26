@@ -1,14 +1,14 @@
 class VariablePanel < HyperComponent
-  param :array_variables , default: []
+  param :variable_array , default: []
   fires :variable_changed
   render() {content}
 
   def content
     DIV(class:'col', style:{'gridColumn':'2','gridRow':'2',overflowY: 'auto'}) do
       FORM do
-        array_variables.each do |variable|
-          Input(variable: variable).on(:value_changed) do |parameter|
-            variable_changed!(parameter)
+        variable_array.each do |variable|
+          Input(variable: variable).on(:value_changed) do |parameter, change_choice|
+            variable_changed!(parameter, change_choice)
           end
         end
       end
