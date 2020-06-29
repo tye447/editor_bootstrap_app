@@ -5,11 +5,14 @@ class Editor < HyperComponent
 
   render do
     DIV(class: 'vh-100',style: { display:'grid', 'gridTemplateRows': '5fr 95fr', 'gridTemplateColumns': '9fr 3fr' } ) do
-      top
-      preview
-      variable_panel
+      header
+      # IFRAME(class:"w-100 h-100 border-0", style:{'gridArea': ' 2 / 1 / auto / auto'}, src:"/preview.html")
+      Preview()
+      VariablePanel(variable_array: @variable_array).on(:variable_changed) do |variable|
+        change_variable_value(variable)
+      end
       loader
-      error_message
+      ErrorMessage()
     end
   end
 
@@ -17,19 +20,7 @@ class Editor < HyperComponent
     init
   end
 
-  def error_message
-    DIV(id: 'error', class: 'alert alert-warning alert-dismissible fixed-top', role: 'alert', style: {'display': 'none'}) do
-      STRONG{"SASS Error: "}
-      SPAN(id: 'error_message', class: 'mr-auto')
-      BUTTON(type: 'button', class: 'ml-2 mb-1 close'){
-        SPAN('aria-hidden': 'true'){"×"}
-      }.on(:click) do
-        hide_error
-      end
-    end
-  end
-
-  def top
+  def header
     DIV(class:"d-flex pl-3 pr-3 mb-2 mt-2",style:{"gridColumnStart":"1","gridColumnEnd":"3"}) do
       input_variable_file
       input_custom_file
@@ -43,12 +34,15 @@ class Editor < HyperComponent
     DIV(class:'input-group w-auto mr-1') do
       DIV(class:'custom-file') do
         INPUT(type: :file, class: 'custom-file-input', id:"fileVariable").on(:change) do |evt|
-          @file = evt.target.files[0].text()
-          @file.then{|result|
-            mutate @variable_file = result
-            update_variables
-            compile_css(initial: false)
-          }
+          @file = evt.target.files[0]
+          unless @file.nil?
+            @file_content = @file.text()
+            @file_content.then{|result|
+              @variable_file = result
+              update_variables
+              compile_css(initial: false)
+            }
+          end
         end
         LABEL(class:"custom-file-label", htmlFor:'fileVariable'){"Variable File"}
       end
@@ -61,12 +55,14 @@ class Editor < HyperComponent
     DIV(class:'input-group mr-1 w-auto') do
       DIV(class:'custom-file') do
         INPUT(type: :file,class: 'custom-file-input', id:"fileCustom").on(:change) do |evt|
-          @file = evt.target.files[0].text()
-          @file.then{|result|
-            mutate @custom_file = result
-            compile_css(initial: false)
-
-          }
+          @file = evt.target.files[0]
+          unless @file.nil?
+            @file_content = @file.text()
+            @file_content.then{|result|
+              @custom_file = result
+              compile_css(initial: false)
+            }
+          end
         end
         LABEL(class:"custom-file-label", htmlFor:'fileCustom'){"Custom File"}
       end
@@ -79,9 +75,6 @@ class Editor < HyperComponent
         show_loader
         initial_variables
         update_preview(@default_css_string)
-        # @css_string = @default_css_string
-        # @variable_file = @default_variable_file
-        #@custom_file = ""
         hide_loader
         mutate
       end
@@ -117,19 +110,6 @@ class Editor < HyperComponent
       }
     end
   end
-
-  def preview
-    IFRAME(class:"w-100 h-100 border-0", style:{'gridArea': ' 2 / 1 / auto / auto'}, src:"/preview.html")
-  end
-
-  def variable_panel
-    unless @variable_array.nil?
-      VariablePanel(variable_array: @variable_array).on(:variable_changed) do |variable, change_choice|
-        change_variable_value(variable, change_choice)
-      end
-    end
-  end
-
   def loader
     DIV(id: 'loader', class: 'spinner-border position-absolute',style:{ display: "none", top: "50%", left: "50%", width: "6em", height: "6em" }) do
       SPAN(class: 'sr-only') do
@@ -145,9 +125,14 @@ class Editor < HyperComponent
         @bootstrap =  res_bootstrap.body
         HTTP.get("/default_variable.scss") do |res_var|
           @default_variable_file =  res_var.body
-          compile_css(initial: true)
+          unless @default_variable_file.nil?
+            # store the default ast for reset
+            @default_ast = Sass.parse(@default_variable_file)
+            # store the default variables array
+            @default_variable_array = @default_ast.find_declaration_variables
+          end
           initial_variables
-          mutate
+          compile_css(initial: true)
         end
       end
     end
@@ -157,28 +142,10 @@ class Editor < HyperComponent
     unless @variable_file.nil?
       @var_ast = Sass.parse(@variable_file)
       unless @var_ast.nil?
-        @var_variables = @var_ast.find_declaration_variables
-        @variable_array = @default_variable_array
-        confusion_arraies
-        mutate
-      end
-    end
-  end
-
-  def confusion_arraies
-    unless @var_variables.nil?
-      @var_variables.each do |item|
-        target = @variable_array.find{|e| e['name'] == item['name']}
-        unless target.nil?
-          if target['value'] != item['value']
-            @ast.replace(item, change: 'value')
-            target['value'] = item['value']
-          end
-          if target['unit'] != item['unit']
-            @ast.replace(item, change: 'unit')
-            target['unit'] = item['unit']
-          end
-        end
+        # get array for the variable file imported
+        @ast.merge(@var_ast)
+        @variable_array = @ast.find_declaration_variables
+        @variable_file =  @ast.stringify
       end
     end
   end
@@ -192,19 +159,23 @@ class Editor < HyperComponent
   end
 
   def initial_variables
-    unless @default_variable_file.nil?
-      # init custome file and variable file
-      @custom_file = ""
-      @variable_file = ""
-      # store the default ast
-      @default_ast = Sass.parse(@default_variable_file)
-      @ast = Sass.parse(@default_variable_file)
-      # store the default variables array
-      @default_variable_array = @default_ast.find_declaration_variables
-      @variable_array = @ast.find_declaration_variables
-      ::Element.find('#fileVariable').val("");
-      ::Element.find('#fileCustom').val("");
+    # init custom file and variable file
+    @custom_file = ""
+    @variable_file = ""
+    ::Element.find('#fileVariable').val("");
+    ::Element.find('#fileCustom').val("");
+    # init ast and array
+    unless @default_ast.nil?
+      @ast = @default_ast.deep_dup
+      unless @default_variable_array.nil?
+        @variable_array = deep_dup(@default_variable_array)
+      end
     end
+  end
+
+  def deep_dup(object)
+    @result = `lodash.cloneDeep(#{object});`
+    return @result
   end
 
   def compile_css(options = {})
@@ -214,7 +185,7 @@ class Editor < HyperComponent
     if options[:initial]
       @combinaison = @functions.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"
     else
-      @combinaison = @functions.to_s+"\n"+@variable_file.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"+@custom_file.to_s+"\n"
+      @combinaison = @functions.to_s+"\n"+@variable_file.to_s+"\n"+@bootstrap.to_s+"\n"+@custom_file.to_s+"\n"
     end
 
     after(0) do
@@ -223,8 +194,12 @@ class Editor < HyperComponent
           unless result.nil?
             if result['status']==1
               # return error message
-              @errorMessage = result['message'].to_s
-              show_error(@errorMessage)
+              @error_message = result['message'].to_s
+              `
+              $(".toast").show();
+              $("#error").html(#{@error_message});
+              $(".toast").toast('show');
+              `
             else
               # return css string and apply it into the iframe
               @css_string = result['text']
@@ -233,6 +208,7 @@ class Editor < HyperComponent
               end
               update_preview(@css_string)
             end
+            mutate
             hide_loader
           end
         end
@@ -242,8 +218,11 @@ class Editor < HyperComponent
           @status = response.json['status']
           if(@status != 'ok')
             # return error message
-            @errorMessage = response.json['message'].to_s
-            show_error(@errorMessage)
+            @error_message = result['message'].to_s
+              `$(".toast").show();
+              $("#error").html(#{@error_message});
+              $(".toast").toast('show');
+              `
           else
             # return css string and apply it into the iframe
             @css_string = response.json['message'].to_s
@@ -252,6 +231,7 @@ class Editor < HyperComponent
             end
             update_preview(@css_string)
           end
+          mutate
           hide_loader
         end
 
@@ -267,23 +247,13 @@ class Editor < HyperComponent
     ::Element.find('#loader').hide()
   end
 
-  def show_error(error)
-    ::Element.find('#error').show()
-    ::Element.find('#error_message').html(error)
-  end
-
-  def hide_error
-    ::Element.find('#error').hide()
-  end
-
-  def change_variable_value(variable, change_choice)
+  def change_variable_value(variable)
     unless @ast.nil? || variable.nil?
       @timer&.abort
       @timer = after(1) do
         # replace the value or the unit of the variable
-        @ast.replace(variable, change: change_choice)
+        @ast.replace(variable)
         @variable_file = @ast.stringify
-        puts @variable_file
         compile_css(initial: false)
         @timer = nil
       end

@@ -4,16 +4,23 @@ class VariablePanel < HyperComponent
   render() {content}
 
   def content
-    DIV(class:'col', style:{'gridColumn':'2','gridRow':'2',overflowY: 'auto'}) do
-      FORM do
-        variable_array.each do |variable|
-          Input(variable: variable).on(:value_changed) do |parameter, change_choice|
-            variable_changed!(parameter, change_choice)
+    unless variable_array.nil?
+      DIV(class:'col', style:{'gridColumn':'2','gridRow':'2',overflowY: 'auto'}) do
+        FORM do
+          variable_array.each do |variable|
+            Input(variable: variable).on(:value_changed) do |parameter|
+              variable_changed!(parameter)
+            end
           end
         end
       end
     end
   end
 
+  # def should_component_update?(new_params_hash, new_state_hash)
+  #   puts variable_array.object_id
+  #   puts new_params_hash[:variable_array].object_id
+  #   super
+  # end
 
 end
