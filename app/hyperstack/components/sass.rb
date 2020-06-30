@@ -99,6 +99,7 @@ class Sass
           else if(var_parsed[0].type == 'number'){
             // variables with or without unit
             var_type = "number";
+            var_value = var_parsed[0].value
             if(var_parsed.length == 1){
               var_unit = '';
             }
@@ -109,6 +110,11 @@ class Sass
                 var_type = 'string';
               }
             }
+          }
+
+          else{
+            var_unit = '';
+            var_type = 'string';
           }
         }
 

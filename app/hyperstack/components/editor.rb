@@ -185,7 +185,11 @@ class Editor < HyperComponent
     if options[:initial]
       @combinaison = @functions.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"
     else
-      @combinaison = @functions.to_s+"\n"+@variable_file.to_s+"\n"+@bootstrap.to_s+"\n"+@custom_file.to_s+"\n"
+      unless @variable_file.empty?
+        @combinaison = @functions.to_s+"\n"+@variable_file.to_s+"\n"+@bootstrap.to_s+"\n"+@custom_file.to_s+"\n"
+      else
+        @combinaison = @functions.to_s+"\n"+@variable_file.to_s+"\n"+@default_variable_file.to_s+"\n"+@bootstrap.to_s+"\n"+@custom_file.to_s+"\n"
+      end
     end
 
     after(0) do
@@ -195,11 +199,7 @@ class Editor < HyperComponent
             if result['status']==1
               # return error message
               @error_message = result['message'].to_s
-              `
-              $(".toast").show();
-              $("#error").html(#{@error_message});
-              $(".toast").toast('show');
-              `
+              show_error(@error_message)
             else
               # return css string and apply it into the iframe
               @css_string = result['text']
@@ -219,10 +219,7 @@ class Editor < HyperComponent
           if(@status != 'ok')
             # return error message
             @error_message = result['message'].to_s
-              `$(".toast").show();
-              $("#error").html(#{@error_message});
-              $(".toast").toast('show');
-              `
+            show_error(@error_message)
           else
             # return css string and apply it into the iframe
             @css_string = response.json['message'].to_s
@@ -237,6 +234,14 @@ class Editor < HyperComponent
 
       end
     end
+  end
+
+  def show_error(error_message)
+    `
+    $(".toast").show();
+    $("#error").html(#{error_message});
+    $(".toast").toast('show');
+    `
   end
 
   def show_loader
