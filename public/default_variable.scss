@@ -30,7 +30,7 @@ $grays: map-merge(
     "900": $gray-900
   ),
   ()
-);
+) !default;
 
 $blue:    #007bff !default;
 $indigo:  #6610f2 !default;
@@ -60,7 +60,7 @@ $colors: map-merge(
     "gray-dark":  $gray-800
   ),
   ()
-);
+) !default;
 
 $primary:       $blue !default;
 $secondary:     $gray-600 !default;
@@ -83,7 +83,7 @@ $theme-colors: map-merge(
     "dark":       $dark
   ),
   ()
-);
+) !default;
 
 // Set a specific jump point for requesting color jumps
 $theme-color-interval:      8% !default;
@@ -132,7 +132,7 @@ $spacers: map-merge(
     5: ($spacer * 3)
   ),
   ()
-);
+) !default;
 
 // This variable affects the `.h-*` and `.w-*` classes.
 $sizes: map-merge(
@@ -144,7 +144,7 @@ $sizes: map-merge(
     auto: auto
   ),
   ()
-);
+) !default;
 
 
 // Body
@@ -251,7 +251,7 @@ $embed-responsive-aspect-ratios: join(
     (1 1),
   ),
   ()
-);
+) !default;
 
 // Typography
 //
@@ -654,7 +654,7 @@ $form-validation-states: map-merge(
     ),
   ),
   ()
-);
+) !default;
 
 // Z-index master list
 //

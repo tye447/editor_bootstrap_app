@@ -22,43 +22,13 @@ class Sass
       `stringify(#{@native});`
     end
 
-    def deep_dup
+    def duplicate # duplicate
       Ast.new(`Object.assign({},#{@native})`)
       # Ast.new(`JSON.parse(JSON.stringify(#{@native}))`)
     end
 
-    def find(query)
-
-    end
-
-    def merge(new_ast)
-      `
-      self_query = createQueryWrapper(#{@native});
-      declarations = self_query().children('declaration');
-      new_query = createQueryWrapper(#{new_ast}.native);
-      new_declarations = new_query().children('declaration');
-      for(i = 0; i < new_declarations.length(); i++){
-        new_declaration = new_declarations.eq(i);
-
-        // get variable name and value
-        var_name = stringify(new_declaration.children('property').get(0));
-        var_value = stringify(new_declaration.children('value').get(0)).replace(' !default','').replace(/(^\s*)|(\s*$)/g,"");
-
-        // find declaration of the variable changed
-        target = declarations.filter((n)=>stringify(self_query(n).children('property').get(0)) === var_name);
-
-        // replace the value
-        new_value_ast = parse(' '+var_value);
-        target.children('value').first().replace((n)=>{
-          return {type: 'value', value: new_value_ast.value}
-        });
-      }
-      #{@native} = self_query().get(0);
-      `
-    end
-
-
     def find_declaration_variables
+      # find all variables of declarations
       `
       array = [];
       query = createQueryWrapper(#{@native});
@@ -127,6 +97,15 @@ class Sass
       return @array
     end
 
+    def add(variable,index)
+      `query = createQueryWrapper(#{@native});
+      new_value_ast = parse(#{variable['name']} + ": " + #{variable['value']} + #{variable['unit']}+";\n");
+      query().children('declaration').eq(#{index}).before(new_value_ast.value[1]);
+      query().children('declaration').eq(#{index}).prev().before(new_value_ast.value[0]);
+      #{@native} = query().get(0);
+      `
+    end
+
     def replace(variable)
       `query = createQueryWrapper(#{@native});
 
@@ -134,13 +113,27 @@ class Sass
       target = query().children('declaration').filter((n)=>stringify(query(n).children('property').get(0)) === #{variable['name']});
 
       // replace the value
-      new_value_ast = parse(' '+#{variable['value']}+#{variable['unit']});
-      target.children('value').first().replace((n)=>{
-        return {type: 'value', value: new_value_ast.value}
-      });
-
+      if(target.length() !== 0){
+        new_value_ast = parse(' '+#{variable['value']}+#{variable['unit']});
+        target.children('value').first().replace((n)=>{
+          return {type: 'value', value: new_value_ast.value}
+        });
+      }
       #{@native} = query().get(0);
       `
+    end
+
+    def find_changed_value
+      `
+      query = createQueryWrapper(#{@native});
+      declarations =  query().children('declaration');
+      targets = declarations.filter((n)=>stringify(query(n).children('value').get(0)).indexOf('default') == -1);
+      string = "";
+      for(i = 0; i<targets.length(); i++){
+        string += stringify(targets.eq(i).get(0))+"\n";
+      }
+      `
+      return `string`
     end
 
     def inspect

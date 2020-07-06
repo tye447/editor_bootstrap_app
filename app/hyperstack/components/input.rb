@@ -1,5 +1,6 @@
 class Input < ::HyperComponent
   param :variable
+  fires :type_changed
   fires :value_changed
   render(){ content }
 
@@ -22,6 +23,7 @@ class Input < ::HyperComponent
         OPTION{'string'}
       end.on(:change) do |evt|
         mutate variable['type'] = evt.target.value
+        type_changed!(variable)
       end
     end
   end

@@ -1,0 +1,10 @@
+$toto: #dee2e6;
+$toto: #fff;
+$toto: #000;
+$white: $toto;
+
+// expected:
+// $toto: #000;
+
+// $white: $toto;
+

@@ -1,0 +1,19 @@
+$toto: #dee2e6;
+$white: $toto;
+
+$toto: #07a07b;
+$titi: $toto;
+$white: $titi;
+$tata: #fff;
+$tutu: $tata;
+
+
+// expected:
+// $toto: #07a07b;
+// $titi: $toto;
+// $tata: #fff;
+// $tutu: $tata;
+
+
+
+// $white: $titi;
