@@ -3,7 +3,6 @@ class VariablePanel < HyperComponent
   fires :variable_changed
   fires :type_changed
   render() {content}
-
   def content
     unless variable_array.nil?
       DIV(class:'col', style:{'gridColumn':'2','gridRow':'2',overflowY: 'auto'}) do
@@ -21,11 +20,4 @@ class VariablePanel < HyperComponent
       end
     end
   end
-
-  # def should_component_update?(new_params_hash, new_state_hash)
-  #   # puts variable_array.object_id
-  #   # puts new_params_hash[:variable_array].object_id
-  #   super
-  # end
-
 end
