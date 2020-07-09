@@ -38,6 +38,7 @@ class Editor < HyperComponent
             @file_content.then{|result|
               @import_variable_file = result
               update_variables
+              mutate
               compile_css(initial: false)
             }
           end
@@ -94,7 +95,7 @@ class Editor < HyperComponent
         end
         A(class:"dropdown-item",href:"#"){"variable.scss"}.on(:click) do |evt|
           evt.prevent_default
-          `download(#{@variable_file}, "variable.scss", "text/plain");`
+          `download(#{@export_variable_file}, "variable.scss", "text/plain");`
         end
         A(class:"dropdown-item",href:"#"){"custom.scss"}.on(:click) do |evt|
           evt.prevent_default
@@ -168,9 +169,17 @@ class Editor < HyperComponent
         @ast.add(item,@new_variable_array.index(item))
       end
     end
-    @variable_file = @ast.find_changed_value
+    @variable_file = @ast.stringify
+    @export_variable_file = @ast.find_changed_value
     @variable_array = @ast.find_declaration_variables
+    display
+  end
+
+  def display
+    puts @import_variable_file
     puts @variable_file
+    puts @variable_array
+    puts @export_variable_file
   end
 
   def remove_duplicate(array)
@@ -188,17 +197,15 @@ class Editor < HyperComponent
     @timer = after(1) do
       # add the changed value to variable file
       @ast.replace(variable)
-      @variable_file = @ast.find_changed_value
-      @variable_array = @ast.find_declaration_variables
+      @variable_file = @ast.stringify
+      @export_variable_file = @ast.find_changed_value
+      target = @variable_array.find {|x| x['name'] == variable['name']}
+      target['value'] = variable['value']
+      target['unit'] = variable['unit']
       compile_css(initial: false)
-      puts @variable_file
+      display
       @timer = nil
     end
-  end
-
-  def add_changed_value(var)
-    item = var['name']+": "+var['value']+var['unit']+";\n"
-    @variable_file = @variable_file + item
   end
 
   def update_preview(css_string)
@@ -212,7 +219,7 @@ class Editor < HyperComponent
   def initial_variables
     # init custom file and variable file
     @custom_file = ""
-    @variable_file = ""
+    @import_variable_file = ""
     # array to stock all the variables changed
     @ast = @default_variable_ast.duplicate
     ::Element.find('#fileVariable').val("")
@@ -222,6 +229,7 @@ class Editor < HyperComponent
     @old_variable_array = []
     @new_variable_array = []
     mutate
+    display
   end
 
   def clone_deep(object)
@@ -235,14 +243,14 @@ class Editor < HyperComponent
     if options[:initial]
       @combinaison = @functions.to_s + "\n"+ @default_variable_file.to_s + "\n" + @bootstrap.to_s + "\n"
     else
-      @combinaison = @functions.to_s + "\n"+ @variable_file.to_s + "\n" + @default_variable_file.to_s + "\n" + @bootstrap.to_s + "\n" + @custom_file.to_s + "\n"
+      @combinaison = @functions.to_s + "\n"+ @variable_file.to_s + "\n" + @bootstrap.to_s + "\n" + @custom_file.to_s + "\n"
     end
     after(0) do
       if CLIENT_SIDE_COMPILATION
         Sass.compile(@combinaison) do |result|
           unless result.nil?
             if result['status']==1
-              # return error message
+              # show error message
               show_error(result['message'].to_s)
             else
               # return css string and apply it into the iframe
@@ -259,7 +267,7 @@ class Editor < HyperComponent
       else
         HTTP.post("/compile_css", payload: {scss: @combinaison}) do |response|
           if response.json['status'] != 'ok'
-            # return error message
+            # show error message
             show_error(result['message'].to_s)
           else
             # return css string and apply it into the iframe

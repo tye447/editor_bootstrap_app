@@ -38,20 +38,31 @@ class Input < ::HyperComponent
 
   def input_color(variable)
     DIV(class:"input-group-prepend") do
-      INPUT(type: :color, class:"form-control input-group-text", style:{"width":"50px","backgroundColor":"#e9ecef"}, value: variable['value'])
-      .on(:change) do |evt|
-      mutate variable['value'] = evt.target.value
-      value_changed!(variable)
-      end
+      BUTTON(type: :button, class: "input-group-text"){
+        I(class: "fas fa-square",style:{color: variable['value']})
+      }.on(:click){mutate (@show = !@show)}
     end
+
     INPUT(id: variable['id'], type: :text, class: "form-control", value: variable['value'])
     .on(:change) do |evt|
       mutate variable['value'] = evt.target.value
       value_changed!(variable)
     end
-    .on(:blur) do |evt|
-      new_value = ::Element.find('#'+variable['id'].to_s).val()
-      mutate variable['value'] = hex_conv(new_value.to_s)
+    DIV(class:"position-absolute",style: {"zIndex": "1"}) do
+      sketch_color_picker(variable)
+    end if @show
+  end
+
+
+  def sketch_color_picker(variable)
+    DIV(style:{position: "fixed", top: "0px", right: "0px", bottom: "0px", left: "0px"})
+    .on(:click) do
+      mutate @show = false
+    end
+    SketchPicker(color: variable["value"])
+    .on(:change) do |color, event|
+      mutate variable['value'] = color.hex
+      value_changed!(variable)
     end
   end
 
@@ -76,15 +87,6 @@ class Input < ::HyperComponent
         mutate variable['unit'] = evt.target.value
         value_changed!(variable)
       end
-      # SPAN(class:"input-group-text"){variable['unit']}
-    end
-  end
-
-  def hex_conv(hex)
-    if hex.length == 4 && hex[0] == '#'
-      return hex[0]+hex[1]+hex[1]+hex[2]+hex[2]+hex[3]+hex[3]
-    else
-      return hex
     end
   end
 

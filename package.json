@@ -9,6 +9,7 @@
     "popper.js": "^1.16.1",
     "query-ast": "^1.0.3",
     "react": "16",
+    "react-color": "^2.18.1",
     "react-dom": "16",
     "react-router": "^5.0.0",
     "react-router-dom": "^5.0.0",
