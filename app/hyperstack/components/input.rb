@@ -5,11 +5,14 @@ class Input < ::HyperComponent
   render(){ content }
 
   def content
-    DIV do
+    DIV(class:'mb-3') do
       title
-      DIV(class:'input-group mb-3') do
+      DIV(class:'input-group') do
         send("input_#{variable['type']}", variable)
       end
+      DIV(class:"position-absolute",style: {"zIndex": "2"}) do
+        sketch_color_picker(variable)
+      end if @show
     end
   end
 
@@ -48,14 +51,11 @@ class Input < ::HyperComponent
       mutate variable['value'] = evt.target.value
       value_changed!(variable)
     end
-    DIV(class:"position-absolute",style: {"zIndex": "1"}) do
-      sketch_color_picker(variable)
-    end if @show
   end
 
 
   def sketch_color_picker(variable)
-    DIV(style:{position: "fixed", top: "0px", right: "0px", bottom: "0px", left: "0px"})
+    DIV(class: "fixed-top fixed-bottom",style: {"zIndex": "0"})
     .on(:click) do
       mutate @show = false
     end

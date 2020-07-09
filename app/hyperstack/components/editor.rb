@@ -172,14 +172,6 @@ class Editor < HyperComponent
     @variable_file = @ast.stringify
     @export_variable_file = @ast.find_changed_value
     @variable_array = @ast.find_declaration_variables
-    display
-  end
-
-  def display
-    puts @import_variable_file
-    puts @variable_file
-    puts @variable_array
-    puts @export_variable_file
   end
 
   def remove_duplicate(array)
@@ -203,7 +195,6 @@ class Editor < HyperComponent
       target['value'] = variable['value']
       target['unit'] = variable['unit']
       compile_css(initial: false)
-      display
       @timer = nil
     end
   end
@@ -229,7 +220,6 @@ class Editor < HyperComponent
     @old_variable_array = []
     @new_variable_array = []
     mutate
-    display
   end
 
   def clone_deep(object)
