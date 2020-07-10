@@ -21,4 +21,3 @@
 //= require sass
 //= require sass.worker
 //= require download
-//= require popper
