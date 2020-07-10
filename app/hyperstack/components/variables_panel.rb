@@ -20,5 +20,4 @@ class VariablePanel < HyperComponent
       end
     end
   end
-
 end
