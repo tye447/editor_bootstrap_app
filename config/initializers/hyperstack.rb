@@ -21,6 +21,4 @@ module Hyperstack
     )
   end
 end if Rails.env.development?
-
-
 #Opal.use_gem('bootstrap_editor')
