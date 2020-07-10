@@ -6,7 +6,6 @@ Hyperstack.configuration do |config|
   config.cancel_import 'react/react-source-browser' # bring your own React and ReactRouter via Yarn/Webpacker
   config.import 'hyperstack/component/jquery', client_only: true # remove this line if you don't need jquery
   config.import 'hyperstack/hotloader', client_only: true if Rails.env.development?
-  #config.import 'bootstrap_editor', client_only: true
 end
 
 # useful for debugging
@@ -21,4 +20,3 @@ module Hyperstack
     )
   end
 end if Rails.env.development?
-#Opal.use_gem('bootstrap_editor')

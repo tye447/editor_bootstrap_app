@@ -211,6 +211,7 @@ class Editor < HyperComponent
     # init custom file and variable file
     @custom_file = ""
     @import_variable_file = ""
+    @export_variable_file = ""
     # array to stock all the variables changed
     @ast = @default_variable_ast.duplicate
     ::Element.find('#fileVariable').val("")
