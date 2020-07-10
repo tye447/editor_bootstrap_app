@@ -45,7 +45,6 @@ class Input < ::HyperComponent
         I(class: "fas fa-square",style:{color: variable['value']})
       }.on(:click){mutate (@show = !@show)}
     end
-
     INPUT(id: variable['id'], type: :text, class: "form-control", value: variable['value'])
     .on(:change) do |evt|
       mutate variable['value'] = evt.target.value
