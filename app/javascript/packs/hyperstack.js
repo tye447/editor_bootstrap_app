@@ -6,6 +6,7 @@ import {parse,stringify} from 'scss-parser';
 import createQueryWrapper from 'query-ast';
 import lodash from 'lodash';
 import { SketchPicker } from 'react-color';
+import downloadjs from 'downloadjs';
  // for opal/hyperloop modules to find React and others they must explicitly be saved
 // to the global space, otherwise webpack will encapsulate them locally here
 global.React = React;
@@ -16,3 +17,4 @@ global.stringify = stringify;
 global.createQueryWrapper = createQueryWrapper;
 global.lodash = lodash;
 global.SketchPicker = SketchPicker;
+global.download = downloadjs;
