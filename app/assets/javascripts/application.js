@@ -17,7 +17,6 @@
 //= require jquery_ujs
 //= require hyperstack-loader
 //= require_tree .
+//= require popper
 //= require bootstrap-sprockets
-//= require sass
-//= require sass.worker
-//= require download
+//= require bootstrap_editor

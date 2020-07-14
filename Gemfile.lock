@@ -48,7 +48,7 @@ GEM
       io-like (~> 0.3.0)
     arel (9.0.0)
     ast (2.4.1)
-    autoprefixer-rails (9.8.4)
+    autoprefixer-rails (9.8.5)
       execjs
     babel-source (5.8.35)
     babel-transpiler (0.7.0)
@@ -336,7 +336,6 @@ PLATFORMS
 
 DEPENDENCIES
   bootsnap (>= 1.1.0)
-  bootstrap (~> 4.5)
   bootstrap_editor
   byebug
   capybara (>= 2.15)
