@@ -68,4 +68,5 @@ group :development do
 end
 
 gem 'bootstrap_editor'
-gem 'font-awesome-sass', '~> 5.13.0'
+gem 'font-awesome-sass'
+gem 'bootstrap'

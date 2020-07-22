@@ -336,12 +336,13 @@ PLATFORMS
 
 DEPENDENCIES
   bootsnap (>= 1.1.0)
+  bootstrap
   bootstrap_editor
   byebug
   capybara (>= 2.15)
   chromedriver-helper
   coffee-rails (~> 4.2)
-  font-awesome-sass (~> 5.13.0)
+  font-awesome-sass
   foreman
   jbuilder (~> 2.5)
   listen (>= 3.0.5, < 3.2)

@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  resources :themes
   mount Hyperstack::Engine => '/hyperstack'
   get '/', to: 'hyperstack#app'
   post '/compile_css', action: :compile_css, controller: 'application'
