@@ -1,17 +1,23 @@
 class Footer < HyperComponent
-  fires :reset_state
+  param :theme
+  fires :reset
   fires :saved
-  render(DIV, class: 'footer d-flex') do
-    BUTTON(type: :submit, class: 'btn btn-primary float-right'){"Save"}.on(:click) do
-      saved!
-    end
-    reset
-  end
-
-  def reset
-    DIV(class:"mr-1") do
-      BUTTON(class:'btn btn-danger'){"Reset"}.on(:click) do
-        reset_state!
+  fires :deleted
+  render do
+    DIV(class: 'container') do
+      DIV(class: 'row') do
+        DIV(class: 'col') do
+          BUTTON(class: 'btn btn-primary', 'data-toggle': 'modal', 'data-target': '.modal'){"Edit"}
+        end
+        DIV(class: 'col') do
+          BUTTON(class:'btn btn-danger'){"Reset"}.on(:click){ reset! }
+        end
+        DIV(class: 'col') do
+          BUTTON(class: 'btn btn-success'){"Save"}.on(:click){ saved! }
+        end
+        DIV(class: 'col') do
+          BUTTON(class: 'btn btn-danger'){"Delete"}.on(:click){ deleted! }
+        end
       end
     end
   end

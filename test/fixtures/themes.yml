@@ -2,8 +2,10 @@
 
 one:
   title: MyString
-  url: MyString
+  variable_file: MyText
+  custom_file: MyText
 
 two:
   title: MyString
-  url: MyString
+  variable_file: MyText
+  custom_file: MyText

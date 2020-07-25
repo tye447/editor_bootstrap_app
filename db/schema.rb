@@ -10,24 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_07_21_072511) do
-
-  create_table "hyperstack_connections", force: :cascade do |t|
-    t.string "channel"
-    t.string "session"
-    t.datetime "created_at"
-    t.datetime "expires_at"
-    t.datetime "refresh_at"
-  end
-
-  create_table "hyperstack_queued_messages", force: :cascade do |t|
-    t.text "data"
-    t.integer "connection_id"
-  end
+ActiveRecord::Schema.define(version: 2020_07_25_195226) do
 
   create_table "themes", force: :cascade do |t|
-    t.string "title"
-    t.string "url"
+    t.string "title", default: "New Theme"
+    t.text "variable_file", default: ""
+    t.text "custom_file", default: ""
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
