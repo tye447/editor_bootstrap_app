@@ -1,6 +1,7 @@
 class Index < HyperComponent
   include Hyperstack::Router::Helpers
   param :selected_theme
+
   render do
     DIV(class: 'col-9') do
       if Theme.count == 0
@@ -14,21 +15,18 @@ class Index < HyperComponent
             .on(:reset_done) { mutate @reset = false }
             .on(:changed) do |ast, custom_file|
               @ast = ast
-              puts "custome_file"
-              puts custom_file
               @custom_file = custom_file
+              puts @custom_file
             end
           end
         end
         DIV(class: 'row') do
           Footer(theme: selected_theme).on(:reset){ mutate @reset = true }
           .on(:saved) do
-            if @custom_file.nil?
-              @custom_file = ""
+            unless @ast.nil?
+              selected_theme.update({variable_file: @ast.find_changed_value, custom_file: @custom_file})
             end
-            puts @custom_file
-            selected_theme.update({variable_file: @ast.find_changed_value, custom_file: @custom_file})
-          end.on(:deleted) { theme.destroy }
+          end.on(:deleted) { selected_theme.destroy }
         end
       end
     end

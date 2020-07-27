@@ -1,7 +1,6 @@
 class App < HyperComponent
   include Hyperstack::Router
   include Hyperstack::Router::Helpers
-
   render(DIV) do
     DIV(class: 'container_fluid') do
       DIV(class: 'd-flex w-100') do
@@ -11,12 +10,7 @@ class App < HyperComponent
               A(id: theme.id, class: "list-group-item list-group-item-action",
                 'data-toggle': "list", role: "tab"){theme.title}
               .on(:click) do
-                puts theme.title
-                puts theme.variable_file
-                @selected_theme = theme
-                puts @selected_theme.title
-                puts @selected_theme.variable_file
-                mutate
+                mutate @selected_theme = theme
               end
             end
           end
