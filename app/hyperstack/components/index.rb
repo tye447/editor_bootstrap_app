@@ -16,7 +16,6 @@ class Index < HyperComponent
             .on(:changed) do |ast, custom_file|
               @ast = ast
               @custom_file = custom_file
-              puts @custom_file
             end
           end
         end

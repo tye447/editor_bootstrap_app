@@ -12,6 +12,10 @@ class App < HyperComponent
               .on(:click) do
                 mutate @selected_theme = theme
               end
+              DIV(class:'d-none') do
+                SPAN{theme.variable_file}
+                SPAN{theme.custom_file}
+              end
             end
           end
           EditItem(theme: @selected_theme) unless @selected_theme.nil?
