@@ -21,7 +21,7 @@ class EditItem < HyperComponent
               DIV(class: 'container') do
                 DIV(class: 'row') do
                   DIV(class: 'col') do
-                    BUTTON(type: :button, class: 'btn btn-primary'){"Save"}.on(:click) do
+                    BUTTON(type: :button, class: 'btn btn-primary','data-dismiss': "modal"){"Save"}.on(:click) do
                       theme.update(title: `$('input[name=title]').val()`)
                     end
                   end
